@@ -1,5 +1,10 @@
 # Feature backlog — from vhanla/winxcorners issues
 
+> Historical research, kept for reference. It predates the 1.0 renumbering, so
+> the version numbers and several action names below are the old ones — for
+> example "Lock Computer" is now "Lock" and "Minimize Active Window" is now
+> "Minimise window".
+
 All 70 issues (57 open, 13 closed) reviewed. Grouped by whether they apply to
 this mod, and what each would cost to build.
 

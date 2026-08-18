@@ -1,6 +1,6 @@
-# Other Windhawk mods live in this folder too, and so does the working copy
-# (Win-x-HotCorners.cpp) that is copied onto the tracked file before a commit.
-# Only the tracked file belongs in the repo.
+# This repository is no longer the working folder - development happens in
+# DhakadG/my-windhawk-mods and the mod file is copied here. Kept so a stray
+# scratch copy cannot be committed by accident.
 *.cpp
 !win-x-hotcorners.wh.cpp
 *.code-workspace

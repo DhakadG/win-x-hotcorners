@@ -2,592 +2,676 @@
 // @id              win-x-hotcorners
 // @name            Win-X Hot Corners
 // @description     macOS-style hot corners & edges for Windows with full multi-monitor support — trigger actions instantly when your cursor hits any screen corner or edge
-// @version         4.1.4
+// @version         1.2.1
 // @author          lost_husky
 // @github          https://github.com/DhakadG
+// @donateUrl       https://ko-fi.com/losthusky_
 // @license         MIT
 // @include         windhawk.exe
-// @compilerOptions -ladvapi32 -lcomctl32 -lgdi32 -lole32 -lpowrprof -lshell32 -luser32
+// @compilerOptions -ladvapi32 -lgdi32 -lole32 -lpowrprof -lshell32 -luser32
 // ==/WindhawkMod==
 
 // ==WindhawkModReadme==
 /*
 # Win-X Hot Corners
 
-macOS-style hot corners **and screen edges** for Windows 10/11 with **full
-multi-monitor support**.
+macOS-style hot corners **and screen edges** for Windows 10 and 11, with full
+multi-monitor support. Throw the pointer into a corner or against an edge and
+something happens — which corner, which edge, and what happens are all yours.
 
-Instantly trigger configurable actions when your cursor reaches any screen
-corner or edge. Configure different actions for each zone on each monitor
-independently.
+![Throwing the pointer into the top-left corner opens Task View](https://raw.githubusercontent.com/DhakadG/my-windhawk-mods/main/docs/media/hot-corners.gif)
 
 Inspired by [WinXCorners](https://github.com/vhanla/winxcorners), rebuilt as a
 Windhawk mod.
 
-### Related mods
+## Quick start
 
-If all you want is one specific behaviour, a smaller mod may suit you better:
+Everything lives on this mod's settings page. Out of the box no zone is
+configured, so nothing fires until you add one.
 
-- **edge-hot-corner-desktop-switch** — hovering the left or right screen edge
-  switches virtual desktop. This mod does that too, as one of the actions you
-  can assign, but if it is the only thing you are after that one is far
-  simpler.
-- **hotcorner-hotkeys** — sends a key combination from a corner. Different
-  trigger model: it dispatches on a hotkey rather than on hover.
+1. Open the settings page and add a **display**. Put `*` in the name field to
+   mean "every monitor" — you can get specific later.
+2. Add a **zone** to it, pick the corner or edge, and pick an action.
+3. Save. That is it; there is no restart.
 
-## Features
+A first set worth trying, if you want something concrete:
 
-- **Bounded latency** — a dedicated detection thread asks to sample the cursor
-  every 16 ms (one system timer tick, so 16-31 ms in practice) and only idles
-  when nothing could fire anyway. Nothing can starve it:
-  not a busy explorer, not an elevated foreground app, not a slow action.
-- **Zero impact on the rest of the system** — no global mouse hook, so your
-  games and apps keep their input path to themselves.
-- **Monitors identified by name** — zones bind to a display's friendly name
-  (e.g. `Dell U2720Q`), so rearranging your desktop or changing which display
-  is primary never reshuffles your configuration. (Two displays of the same
-  model are the one exception — see *Identifying your monitors*.)
-- **Per-monitor DPI correct** — detection runs per-monitor-DPI-aware, so
-  zones land in the right place on mixed-scaling setups.
-- **Screen edges** — trigger actions on the top, bottom, left, or right edge
-  of any monitor.
-- **Configurable zone size**, optional dwell delay, and a cooldown timer.
-- **Fullscreen protection** — auto-detects games, presentations, and D3D
-  fullscreen apps.
-- **Drag protection** — zones don't fire while a mouse button is held.
-- **App exclusions** — blacklist processes that need corner/edge clicks.
+| Zone | Action | Why |
+| --- | --- | --- |
+| Top-left corner | Task View | The classic. Nothing else lives up there. |
+| Top-right corner | Show desktop, **Hold** set to *The same action again* | Peek at the desktop, move away to put it back. |
+| Bottom-left corner | Start menu | It is where the Start button already is. |
+| Bottom-right corner | Switch to last window | Set **Knock window** to `400` so a stray brush past it does nothing. |
 
-## Configuring — look in your system tray, not here
+Then read *Ways to trigger a zone* — the trigger style matters more than the
+action for whether this feels good or infuriating.
 
-**This mod has no Settings page.** Everything is configured from the tray icon
-it adds, next to the clock:
+## At a glance
 
-- **Left-click** — turn the hot corners on or off.
-- **Right-click** — a quick menu: suspend for a while, skip while an app is
-  fullscreen, skip while dragging.
-- **Right-click → Zones & settings...** — the dashboard, where zones, timings
-  and everything else live.
+- **16 zones per display** — four corners, and four edges split into three
+  segments each.
+- **38 actions**, plus any key combination and any command you can name.
+- **Five trigger styles** that combine: arrival, dwell, knock, held modifier,
+  press-and-hold.
+- **Per-monitor everything** — zones bind to a display's name, not its position,
+  so rearranging screens never reshuffles your configuration.
+- **Stays out of the way** — no global mouse hook, so your games and apps keep
+  their input path to themselves. Suppressed automatically while a window is
+  fullscreen and while you are dragging.
 
-The dashboard is a normal window with a live preview of your screen, so you
-click the corner you want and pick its action. Every field explains itself on
-hover.
+## Ways to trigger a zone
 
-This is deliberate. Twelve zones on each of up to eight displays, each with a
-forty-entry action list and six timing overrides, is not something a settings
-form can present without becoming a tree nobody can navigate — and a Windhawk
-mod cannot write its own settings from code, so any change made in the mod's
-own UI could not be written back. Two places to configure one thing, disagreeing
-the moment you touched either. Now there is one.
+A zone does not have to fire the instant you touch it. There are five trigger
+styles, every one of them works on every zone — corners and edge segments alike —
+and they combine: a corner can require a knock *and* a held modifier *and* a
+dwell before it does anything.
 
-If the tray icon is hidden, it is in the overflow area — drag it onto the
-taskbar to keep it there.
+### Arrival
 
-## Available Actions
+The default. Reach the zone, the action runs.
+
+![Task View opening as the pointer reaches the top-left corner](https://raw.githubusercontent.com/DhakadG/my-windhawk-mods/main/docs/media/trigger-arrival.gif)
+
+A short **pass-through guard** (80 ms out of the box) keeps a zone quiet when you
+were only travelling across it on the way somewhere else. If actions still fire
+while you are just moving around, raise it before you reach for anything else.
+
+### Dwell
+
+Set **Activation delay** and the pointer has to rest in the zone that long before
+it fires. Leave early and nothing happens.
+
+![Quick Settings appearing after the pointer rests on the top edge](https://raw.githubusercontent.com/DhakadG/my-windhawk-mods/main/docs/media/trigger-dwell.gif)
+
+Use this on a zone you pass through constantly. 300–500 ms is deliberate without
+feeling sluggish; past about a second it stops feeling like a hot corner.
+
+### Knock
+
+Set **Knock window** and a single arrival never fires. The zone arms only when
+you leave and come straight back within that many milliseconds — a double-knock.
+
+![Leaving and re-entering the bottom-right corner to switch windows](https://raw.githubusercontent.com/DhakadG/my-windhawk-mods/main/docs/media/trigger-knock.gif)
+
+This is the one to reach for on a corner you brush past often but want to keep
+for something disruptive. 400 ms is a comfortable knock; below about 200 ms it
+starts to demand real intent. `0` turns it off.
+
+Knock and dwell answer the same question differently: dwell asks you to wait,
+knock asks you to be deliberate without waiting at all.
+
+### Hold to peek
+
+Older Windows had a thin Show Desktop button past the clock — rest the pointer on
+it and the desktop peeked through, move away and every window came back. Windows
+11 dropped it. Any zone here can work that way.
+
+Set **Hold — action when the pointer leaves** and the zone stops being fire-once.
+The action runs on arrival, and the release action runs when the pointer leaves.
+For anything that toggles — Show Desktop, Mute, Keep Awake — pick **The same
+action again**:
+
+| Setting | Value |
+| --- | --- |
+| Zone | `Top-right corner` |
+| Action | `Show desktop` |
+| Hold — action when the pointer leaves | `The same action again` |
+
+![Resting in the top-right corner to peek at the desktop, windows returning on leaving](https://raw.githubusercontent.com/DhakadG/my-windhawk-mods/main/docs/media/trigger-hold.gif)
+
+The two halves are independent, so a release does not have to undo the entry —
+open Quick Settings on arrival and mute on departure if that is useful to you.
+
+One caveat on Show desktop specifically. It sends Win+D, which *toggles*
+minimise-all against whatever the current state is — the old shell button was a
+true peek with no state of its own, and Windows exposes no API for that any
+more. Rest in the corner and leave, and it behaves as a peek. But activate a
+window while the desktop is showing and you have changed what the second Win+D
+does, so the release can minimise rather than restore. Every other toggle
+— Mute, Keep awake — is unaffected.
+
+A hold only ever releases what it actually engaged, so a pointer that clips the
+corner without staying long enough to fire leaves nothing behind. Disabling the
+mod, suspending it, or a display waking up all release a held zone first — a
+peeked desktop can never be left stuck.
+
+### With a modifier held
+
+Set **Required modifier**, globally or on one zone, and that zone only fires
+while Ctrl, Alt, Shift or Win is down. Every other time you hit the corner it is
+inert.
+
+![Snapping a window left with Ctrl held while touching the left edge](https://raw.githubusercontent.com/DhakadG/my-windhawk-mods/main/docs/media/trigger-modifier.gif)
+
+The key is checked continuously rather than only on arrival, so you can park the
+pointer in the corner first and press the key afterwards — the zone fires the
+moment the key goes down. Either order works.
+
+### Not a trigger, but often confused with one
+
+**Alternate key press** and **Alternate command** change *what* a zone does
+rather than *when* it fires — the same corner runs the left action, then the
+right one, then the left again. Combine either with any trigger above.
+
+![One edge maximising a window, then restoring it on the next visit](https://raw.githubusercontent.com/DhakadG/my-windhawk-mods/main/docs/media/trigger-alternate.gif)
+
+Above, the right edge is set to `Win+Up | Win+Down`: the first visit maximises
+the window and the next one puts it back.
+
+## Actions
 
 **Switching**
 
 | Action | Description |
 |--------|-------------|
 | Task View | Overview of all windows (Win+Tab) |
-| Switch to Last Window | Jump straight back to the previous window (Alt+Tab) |
-| Task Switcher | Persistent switcher you can click through (Ctrl+Alt+Tab) |
-| Virtual Desktop — Next / Previous / New | Move between or create desktops |
+| Switch to last window | Jump straight back to the previous window (Alt+Tab) |
+| Task switcher | Persistent switcher you can click through (Ctrl+Alt+Tab) |
+| Next / Previous / New virtual desktop | Move between or create desktops |
+| Close virtual desktop | Close the current desktop |
 
 **Windows**
 
 | Action | Description |
 |--------|-------------|
-| Show Desktop | Toggle desktop visibility |
-| Hide Other Windows | Minimize all except the active window (Win+Home) |
-| Minimize Active Window | Win+Down |
-| Maximize Active Window | Win+Up |
-| Snap Window Left / Right | Win+Left / Win+Right |
-| Close Active Window | Alt+F4 |
+| Show desktop | Toggle desktop visibility |
+| Hide other windows | Minimize all except the active window (Win+Home) |
+| Minimise window | Win+Down |
+| Maximise window | Win+Up |
+| Snap left / Snap right | Win+Left / Win+Right |
+| Close window | Alt+F4 |
 
 **System**
 
 | Action | Description |
 |--------|-------------|
-| Start Menu | Open the Start menu |
+| Start menu | Open the Start menu |
 | Search | Win+S |
 | Settings | Win+I |
 | File Explorer | Win+E |
 | Quick Settings | Win+A |
-| Notification Center | Win+N |
-| Clipboard History | Win+V |
-| Screenshot / Snip | Win+Shift+S |
-| Project / Second Screen | Win+P |
+| Notification Centre | Win+N |
+| Clipboard history | Win+V |
+| Screenshot | Win+Shift+S |
+| Project display | Win+P |
 | Task Manager | Open Task Manager |
-| Mute Volume | Toggle system mute |
+| Mute | Toggle system mute |
 
 **Power**
 
 | Action | Description |
 |--------|-------------|
-| Lock Computer | Lock the workstation instantly |
-| Lock and Turn Off Monitors | Lock, then blank the displays |
-| Keep Awake On / Off | Suspend or restore screensaver and sleep |
+| Lock | Lock the workstation instantly |
+| Lock and turn monitors off | Lock, then blank the displays |
+| Keep awake on / off | Suspend or restore screensaver and sleep |
 | Sleep | Put the computer to sleep |
-| Turn Off Monitors | Power off all displays |
-| Start Screen Saver | Activate the screen saver |
+| Turn monitors off | Power off all displays |
+| Start screensaver | Activate the screen saver |
 
 **Custom**
 
 | Action | Description |
 |--------|-------------|
-| Virtual Key Press | Send any key combination, or several in sequence |
-| Alternate Key Press | Two combinations, fired alternately (`Alt+S | Alt+H`) |
-| Alternate Command | Two commands, fired alternately |
-| Custom Command | Launch any executable, path, or URL |
+| Send key press | Send any key combination, or several in sequence |
+| Alternate key press | Two combinations, fired alternately (`Alt+S | Alt+H`) |
+| Alternate command | Two commands, fired alternately |
+| Custom command | Launch any executable, path, or URL |
 | Nothing | Disabled (default) |
 
-## Identifying your monitors
+### Arguments
 
-The dashboard's monitor selector lists your displays by name, so normally there
-is nothing to identify. The names also go to this mod's log every time it loads
-or your display layout changes, which is the place to check when a display is
-unplugged and you want to know which configuration belonged to it:
+Four actions take an argument. The rest ignore the field.
+
+**Send key press** — one combination is `Modifier+Key`. Separate several with
+semicolons and they are sent **one after another**, not merged into a single
+chord: `Ctrl+C;Alt+Tab` sends Ctrl+C, then Alt+Tab.
+
+> Modifiers are Ctrl, Alt, Shift and Win. Keys are A-Z, 0-9, F1-F24, Enter,
+> Space, Tab, Escape, Home, End, Delete, the arrows, and so on.
+> Examples: `Ctrl+Shift+Esc`, `Alt+F4`, `Win+L`
+
+**Custom command** — any executable, file, folder or URL. Environment variables
+such as `%AppData%` are expanded. Prefix with `uac;` to request elevation.
+
+> Examples: `notepad.exe`, `C:\Windows\System32\cmd.exe`,
+> `%AppData%\my_script.bat`, `https://example.com`, `uac;cmd.exe`
+
+**Alternate key press** and **Alternate command** — two of the above separated
+by `|`. The zone fires the left one, then the right one, then the left again.
+
+> `Alt+S | Alt+H` — one corner shows notes, then hides them
+> `notepad.exe | calc.exe`
+
+Each side accepts everything the single version does, so `Ctrl+C;Ctrl+V |
+Alt+Tab` is valid. Every zone alternates independently, and the position resets
+whenever settings or the display layout change.
+
+## Shaping the zones
+
+**Corner size** is the side of the square you have to reach. **Edge thickness**
+is how far in the strip along an edge extends. Both are in pixels, both can be
+overridden per zone, and neither can make two zones overlap: each edge's
+thickness is clamped to the smaller of the two corners it runs between.
+
+Small is not always better. A 1-2 px corner is technically reachable, because
+the pointer stops dead at the screen boundary, but a 6-15 px one is far more
+forgiving on a high-DPI display without ever being hit by accident.
+
+### Each edge is three segments
+
+Every edge runs between the two corners it touches and is divided into three
+parts — for the top and bottom edge those are **left, centre, right**; for the
+left and right edge, **top, middle, bottom**. The centre's width is the *Edge
+centre width* setting, as a percentage of the edge.
+
+You do not choose a "mode". Configure the three segments and the shape follows:
+
+| You set | You get |
+| --- | --- |
+| All three the same | One zone spanning the whole edge |
+| Left + centre same, right different | Two zones |
+| All three different | Three zones |
+| Only the centre | One zone in the middle of the edge |
+| Left and right same, centre unset | Two zones with a dead gap between them |
+
+Neighbouring segments merge only when they are *identical* — same action, same
+arguments, same overrides. Two segments running the same action with different
+cooldowns stay separate, because a merged zone could only carry one cooldown.
+
+Merging is not cosmetic. Three separate zones all running Task View would each
+re-arm as the pointer crossed a seam, so sliding along the edge would fire it
+repeatedly; one merged zone fires once.
+
+## Across multiple monitors
+
+Zones bind to a display's **name**, not its position, so rearranging your
+screens or changing which one is primary never repoints a configuration at the
+wrong monitor.
+
+Put `*` in the **Display** field to apply one configuration everywhere.
+Resolution is **per zone**: a name-matched entry wins for the zones it defines,
+and `*` supplies the rest — so you can share most of a layout and override a
+single corner on a single display. To remove a zone on one screen rather than
+replace it, set it to **Disabled here**; leaving it unset means "not
+configured", which falls through to `*`.
+
+### Finding a display's name
+
+The dashboard has a tab per display, labelled with its name, so usually there is
+nothing to look up. The names also go to this mod's log every time it loads or
+your layout changes, which is the place to copy an exact one from:
 
 ```
-Monitor 1 [PRIMARY] id='Dell U2720Q' device=\\.\DISPLAY1 (0,0)-(3840,2160)
-Monitor 2           id='BOE0998'     device=\\.\DISPLAY2 (3840,0)-(5760,1080)
++-- Your monitors ---------------------------------------
+|  Copy a name into the "Display" field on this mod's settings page.
+|  Use  *  there to apply one configuration to every monitor.
+|
+|   1. "Dell U2720Q"   [primary]   3840 x 2160  at (0, 0)
+|   2. "BOE0998"                   1920 x 1080  at (3840, 0)
++--------------------------------------------------------
 ```
 
-Copy the text inside the quotes. If you own two identical displays they get a
-` #2`, ` #3` suffix so each stays separately configurable. Those suffixes are
-handed out in listed order — primary first, then left to right — so unlike the
-names themselves they are not fixed: making the other twin primary swaps which
-one is ` #2`, and swaps the configuration with it. Check the log after such a
-change.
-
-The selector's first entry, **All monitors** (`*`), applies one configuration
-to every display.
-
-Resolution is **per zone**: a name-matched entry wins over `*` for the zones
-it defines, and `*` supplies the rest. So you can put a shared config on `*`
-and override just one corner on one display.
-
-## A note on inner corners
-
-Windows lets the pointer cross freely between adjacent monitors, so corners
-along a shared boundary have nothing to stop the cursor against. They are hard
-to hit on purpose and easy to hit by accident. Prefer the outer perimeter of
-your desktop arrangement — the pointer physically stops there, which is what
-makes hot corners feel reliable on macOS.
-
-## Virtual Key Press Format
-
-One combination is `Modifier+Key`. Separate several with semicolons and they
-are sent **one after another**, not merged into a single chord — `Ctrl+C;Alt+Tab`
-sends Ctrl+C, then Alt+Tab.
-
-**Modifiers:** Ctrl, Alt, Shift, Win
-**Keys:** A-Z, 0-9, F1-F24, Enter, Space, Tab, Escape, Home, End, Delete,
-Left, Right, Up, Down, etc.
-
-**Examples:** `Ctrl+Shift+Esc`, `Alt+F4`, `Win+L`
-
-## Alternate Key Press / Alternate Command
-
-Two actions separated by `|`. The zone fires the left one, then the right
-one, then the left again — the "different action on the second trigger" case:
-
-```
-Alt+S | Alt+H            one corner shows notes, then hides them
-notepad.exe | calc.exe
-```
-
-Each side accepts everything the single-action version does, so
-`Ctrl+C;Ctrl+V | Alt+Tab` is valid. Every zone alternates independently, and
-the position resets whenever settings or the display layout change.
-
-## Custom Command Format
-
-Any executable path, file, folder, or URL. Environment variables like
-`%AppData%` are expanded automatically.
-
-**Examples:**
-- `notepad.exe`
-- `C:\Windows\System32\cmd.exe`
-- `%AppData%\my_script.bat`
-- `https://example.com`
-
-Prefix with `uac;` to request elevation: `uac;cmd.exe`
-
-## App Exclusions
-
-Semicolon-separated list of process names (case-insensitive).
-Hot corners are disabled when any excluded process is the foreground window.
-
-**Example:** `photoshop.exe;premiere.exe;blender.exe`
-
-# Changelog
-
-## What's New in v4.1.4
-
-Review fixes, the first of which could lose a display's configuration.
-
-- **The editor bound each configuration to a list position instead of to a
-  display.** Detection has always matched zones by display name, but the
-  dashboard read and wrote whichever stored group sat at the same index as the
-  entry in its dropdown. That list is ordered primary first, then left to right,
-  so making another display primary or unplugging one renumbered it — and the
-  editor would then show one display's zones under another's name, and overwrite
-  them there on save. Each entry is now matched to its stored group by name, a
-  display configured for the first time takes the lowest free group, and a
-  display that is not currently plugged in keeps the group it owns.
-- **Custom Command could silently fail for URLs, shortcuts and folders.** Those
-  go through shell extensions that need COM, and the worker thread running them
-  had no apartment. It initialises one now, and both `ShellExecuteEx` calls ask
-  the shell not to return before it is finished, since that thread has no
-  message loop.
-- **A cooldown consumed the visit.** Walking into a zone shortly after anything
-  else fired and then parking there never fired at all — you had to leave and
-  come back. A cooldown is now a wait rather than a refusal, so staying put
-  outlasts it.
-- **Lock and blank the display no longer blocks unload** for up to ten seconds
-  while it waits out the blanking delay.
-- Argument fields stop input at the length the mod can actually store, rather
-  than truncating past it in silence.
-- The readme no longer claims a 16 ms sample rate without qualification: the
-  wait expires on a system timer tick, so it is 16-31 ms in practice.
-- Dropped an unused header, a brush that was created and destroyed but never
-  used, and a monitor-matching branch that could never be reached.
-
-## What's New in v4.1.3
-
-- **Fixed a crash on unload.** Every thread is given three seconds to stop
-  before the mod frees the locks they share, and a thread that misses that
-  deadline makes the mod leak them instead — freeing something a live thread is
-  still using is undefined behaviour inside Windhawk's own process. The tray
-  thread was the one exception: its timeout was logged and then ignored, so a
-  tray thread that had not finished could have its locks deleted underneath it.
-  It now counts like the others. Waits also treat a failed wait as "still
-  running" rather than as success.
-- **The tray's on/off toggle is serialised with the rest.** It wrote its key
-  outside the reload lock, so a reload running at that moment could put the old
-  value back and leave the switch disagreeing with what was stored.
-
-## What's New in v4.1.2
-
-Two more review fixes, both about threads.
-
-- **Two reloads could finish out of order.** Reloading builds the whole
-  configuration off to the side and swaps it in at the end — which is what keeps
-  the settings lock held briefly, but meant two reloads started close together
-  could publish in the wrong order, leaving the live configuration stale against
-  what was actually saved. Saving from the dashboard, resetting, and the tray's
-  own toggles now hold one lock across both the write and the reload that reads
-  it back, so a reload always sees a settled store.
-- **A failed cursor read slowed detection to the idle rate.** `GetCursorPos`
-  failing is transient, and the zones are still armed while it does — so the
-  right answer is to try again on the next 16 ms tick, not to wait 100 ms. Only
-  the states where nothing can fire at all use the idle rate, which is what the
-  documentation already claimed.
-
-## What's New in v4.1.1
-
-Review fixes on top of v4.1.0, one of them a real race.
-
-- **Fixed: a reload could briefly publish an empty zone set.** Loading the
-  configuration was two steps — write the defaults, then lay the stored values
-  over them — each taking the settings lock separately. In the gap the mod held
-  a complete, plausible, *wrong* configuration with no zones in it. Four of the
-  six things that trigger a reload run on a different thread from the detection
-  loop, and that loop re-checks the display layout twice a second, so a rebuild
-  landing in the gap would arm nothing and log "No zones are active". Loading is
-  now one transaction: the whole configuration is built off to the side and
-  swapped in under a single lock.
-- **That lock is also held for far less time.** It used to cover several hundred
-  value-store reads, an action built per zone, and two log writes — while the
-  detection thread, the action worker and the tray menu all waited on it.
-- **The adaptive poll rate is gone.** v4.1.0 eased the sampling interval off
-  while the cursor was far from every zone. Whichever way that decision is
-  made, it is made from a sample taken *before* the user starts moving, so a
-  flick could cross a zone entirely between two samples. On the outer perimeter
-  that costs a late trigger, because the pointer stops against the screen edge —
-  but a corner shared with a second monitor has no edge to stop against, and
-  there it was a lost one. Detection is back to a flat 16 ms whenever a zone
-  could fire; it still idles at 100 ms when the mod is switched off, suspended,
-  or has no zones armed, where nothing can be missed because nothing can fire.
-- **The dashboard's Reset button said "Reset to Windhawk settings".** There is
-  no Windhawk settings page to go back to. It now says what it does.
-- **The monitor list in the log** still told you to copy a name into the
-  "Monitor" setting, which no longer exists.
-
-## What's New in v4.1.0
-
-**The Settings page is gone. Everything is in the tray icon now.**
-
-- **One place to configure this mod, not two.** The Windhawk Settings page has
-  been removed entirely. Twelve zones per display, each with a forty-entry
-  action list and six timing overrides, had grown into a tree that was faster
-  to give up on than to navigate — and because a mod cannot write its own
-  settings from code, anything you changed in the dashboard could never be
-  written back to it. The two disagreed the moment you touched either one. The
-  dashboard won: right-click the tray icon → **Zones & settings...**
-- **If you configured this mod on the Settings page, set it up again from the
-  dashboard.** Configurations already saved from the dashboard are untouched.
-- **Reset actually resets.** The dashboard's Reset button left the numeric
-  options — sizes, delays, cooldown — behind in storage: still applied, no
-  longer shown anywhere. It now clears everything it can write.
-- **Fixed: per-display zones could be attributed to the wrong display.** The
-  editor matched a stored configuration to the monitor selector by list
-  position rather than by monitor, so a configuration written for one display
-  could appear under **All monitors** — and saving it then fired it on every
-  display.
-- **Verbose logging is gone as a setting.** Every log it gated was once per
-  trigger, never on the polling path, so there was nothing to gate. Suppressed
-  triggers now log once per run instead of once per cooldown, which is what the
-  setting was really protecting you from.
-- **The tray menu's reset** now says what it does — it clears the three toggles
-  above it, and nothing else. Wiping your zones is the dashboard's Reset
-  button, which asks first.
-- **The options are grouped.** Fourteen fields in one flat column, in no
-  particular order, is a wall. They now sit under four headings — how big the
-  zones are, when a zone fires, when to stay out of the way, everything else —
-  and every field still explains itself on hover.
-
-**Behaviour**
-
-- **A fullscreen app now only silences the display it is on.** Launching a game
-  on one monitor used to disable the hot corners on *every* monitor, which is
-  the opposite of why anyone owns a second screen. When Windows will not say
-  which display is involved, the old behaviour still applies and all displays
-  are suppressed.
-- **A split edge alternates as one edge.** With a centre action assigned, an
-  edge becomes two strips either side of the centre — but it is still one edge,
-  and **Alternate Key Press** / **Alternate Command** kept a separate A/B
-  position for each half. Walking into the left strip and then the right gave
-  you A twice. They now share one position.
-- **The detection thread idles when nothing can fire.** It sampled the cursor
-  every 16 ms even with the mod switched off, suspended, or with no zones
-  armed. Those three cases now tick at 100 ms. *(v4.1.0 also eased off while
-  the cursor was merely far away; v4.1.1 removed that — see below.)*
-
-## What's New in v4.0.5
-
-- **Fixed: "Turn Off Monitors", "Start Screen Saver" and "Lock and Turn Off
-  Monitors" could stall every other action behind them.** They ask every
-  window on the desktop to act, and the old call waited up to half a second
-  for *each* one — so a single slow application could tie up the action
-  thread for seconds while the mod appeared to have stopped responding. The
-  request is now sent without waiting.
-- Added a note on which smaller mods overlap with this one, so it is easier to
-  tell which is the right tool.
-- Internal tidying: dropped snapshot fields nothing read, the theme helper
-  resolves its entry point once instead of on every control, and the tray
-  icon's mask is explicitly zeroed rather than left undefined.
-
-## What's New in v4.0.4
-
-- **Fixed: disabling or reloading the mod with the settings window open could
-  crash Windhawk.** Shutdown stopped every thread except the one running that
-  window, then freed the locks it was still using. It now closes the window
-  and waits for it, and if it will not close, leaves the locks alone rather
-  than pulling them out from under it.
-- **Fixed: a failed key injection could leave a modifier stuck down.** If the
-  key presses went through but the releases did not, the key stayed logically
-  held for the rest of the session — a stuck Win or Ctrl that nothing on
-  screen explains. The releases are now replayed after a partial send.
-- **Fixed: opening the settings window leaked an icon every time.**
-- Saving a configuration for a display beyond the eighth now says so in the
-  log instead of appearing to work and losing the edit on the next reload.
-- A Custom Command of just `uac;` with nothing after it no longer tries to
-  relaunch Windhawk itself with elevation.
-- Settings shared between the tray, the settings window and the detection
-  loop are read and written atomically.
-
-## What's New in v4.0.3
-
-- **Fixed: the mod would not load at all.** "Require a modifier key" offered a
-  dropdown whose values were numbers, and Windhawk only accepts text values for
-  a dropdown — it refused to parse the settings before any of the mod ran. The
-  choices are now stored by name (`none`, `ctrl`, `alt`, `shift`, `win`); a
-  configuration saved by an earlier version keeps working.
-
-## What's New in v4.0.2
-
-- **Fixed: zones could stop matching after a display change.** Windows reports
-  a layout that changed while it was being read as a buffer error, and that is
-  precisely when this runs — a layout change is what calls it. The mod treated
-  that as fatal and dropped every display name for the rebuild, leaving zones
-  bound to a name unmatched until the next display change. It now re-reads
-  instead.
-- Documentation corrections: two identical displays are the one case where
-  changing the primary display can move a configuration, because the ` #2`
-  suffix follows listed order rather than the display itself. That is now
-  stated instead of implied otherwise.
-
-## What's New in v4.0.1
-
-- **Fixed: stray text showing through the per-zone settings panel.** The
-  preview's hover card was drawn into the same strip of the window that the
-  per-zone fields occupy, so it was never readable and its lines leaked out
-  through the gaps between the fields. The card is gone — the panel below the
-  preview already shows those values for the selected zone, and clicking a
-  zone in the preview selects it.
-- **Fixed: tooltips were unreadable dark-on-dark.** A themed tooltip silently
-  ignores the colour messages that were meant to restyle it, so it kept the
-  system colours while the rest of the dashboard followed the palette.
-  Tooltips now use the dashboard's own background, text colour and font, in
-  both light and dark themes.
-- The dashboard window now clips its children, so nothing painted by the
-  window can leave residue underneath a control.
-- **Fixed a crash risk when opening the dashboard.** It listed your monitors
-  by reading the detection thread's own monitor table, which that thread
-  clears and rebuilds whenever the display layout is re-checked — freeing the
-  name strings mid-read. The names now travel inside the same immutable
-  snapshot the detection loop already uses.
-
-## What's New in v4.0.0
-
-- **Per-zone settings.** Size, delay, pass-through guard, knock window,
-  cooldown and required modifier can each be overridden for a single zone.
-  Blank means inherit, so existing configurations behave exactly as before.
-- The dashboard follows the system light/dark theme instead of being fixed
-  dark, which made it near-unreadable on a light desktop.
-- Preview fixes: edges are split around their centre blocks, so hovering a
-  centre no longer highlights the whole edge.
-
-## What's New in v3.9.0
-
-- **Settings dashboard**, opened from the tray icon: all twelve zones per
-  monitor, the global options, and a clickable preview of your screen.
-  Windhawk's own settings page stays available and can be restored at any
-  time with *Reset to Windhawk settings*.
-
-## What's New in v3.8.0
-
-- **Tray icon** with enable/suspend controls and quick access to the log.
-
-## What's New in v3.7.0
-
-- **Alternating actions** — one zone that runs two different actions on
-  successive triggers, written as `first|second` in the argument field.
-- **Keep zones off the taskbar**, so an edge zone stops at the work area
-  instead of fighting the taskbar's peek-at-desktop strip.
-
-## What's New in v3.6.0
-
-- **Knock to activate** — require entering a zone twice in quick succession.
-- **Modifier gating** — zones stay inert unless a chosen key is held.
-- **Edge-centre zones**, plus four new actions.
-- v3.6.1: the display actually blanks after *Lock and Turn Off Monitors*.
-  `WM_SYSCOMMAND` was posted to the foreground window, which is null once
-  `LockWorkStation` has switched desktop; it is now broadcast.
-
-## What's New in v3.5.0
-
-- First public release.
-
-## What's New in v3.4.0
-
-- **16 new actions**, so common shortcuts no longer need a Virtual Key Press:
-  Switch to Last Window (Alt+Tab), Task Switcher (Ctrl+Alt+Tab), Minimize,
-  Maximize, Snap Left/Right, Close Window, File Explorer, Settings, Search,
-  Clipboard History, Screenshot, Project, and Virtual Desktop Next/Previous/New.
-
-## What's New in v3.3.0
-
-- **Extended keys are now flagged correctly.** Arrow keys, Home/End/PgUp/PgDn,
-  Insert/Delete, the Win keys, right Ctrl/Alt and the media keys sit on the
-  E0-prefixed part of the keyboard. Injected without `KEYEVENTF_EXTENDEDKEY`
-  they resolve to their numpad twins, so a Virtual Key Press using
-  `Win+Right` (snap) or any arrow/navigation key silently did the wrong thing.
-- **Unquoted paths containing spaces now launch.** `C:\Program Files\Tool\t.exe -x`
-  was split into `C:\Program` plus arguments and failed with file-not-found.
-  The executable is now rebuilt token by token until it names a real file.
-  Bare commands (`notepad.exe`) are untouched so the shell still resolves them
-  via PATH, and quoted paths behave exactly as before.
-- **Windows 11 shell surfaces hosted outside explorer.exe** — Start
-  (`StartMenuExperienceHost.exe`), Search (`SearchHost.exe`), Action Center —
-  are no longer mistaken for fullscreen apps. Matched by exact process name,
-  not a `*Host.exe` suffix rule, which would also match ordinary applications.
-
-## What's New in v3.2.0 — stability
-
-Spamming the zones could make the whole desktop stagger. Four causes, all fixed:
-
-- **Stuck modifier keys.** Key injection used to release any modifier you were
-  physically holding and re-press it afterwards. If you let go in between, that
-  re-press had no matching release and the modifier stayed logically held down
-  for the rest of the session — a stuck Win or Ctrl key breaks every app at
-  once. Removed: every key the mod presses is now released in the same batch.
-- **Burst injection.** A sweep across several zones queued a burst of shell
-  commands that the worker replayed back-to-back — four Win+Tab injections in
-  40 ms in one report. There is now a hard 250 ms floor between any two
-  actions, and the queue holds 2 instead of 8 so a backlog is dropped rather
-  than replayed late.
-- **Logging on the hot path.** Every trigger wrote to `OutputDebugString`,
-  which takes a machine-wide lock — that stalls *other* Windhawk mods, not
-  just this one. Per-trigger logging is now off by default (**Verbose
-  logging**). Errors and startup info are still always logged.
-- **Unsafe teardown.** If a thread was still busy (e.g. blocked on a UAC
-  prompt) the mod freed the locks it was using. It now leaks them instead —
-  the process exits immediately after, so a leak is free and a use-after-free
-  is not.
-
-Also: the display-layout poll ran 5 system calls every 16 ms; it now runs
-twice a second, leaving the tick to one cursor read plus a few comparisons.
-
-## What's New in v3.1.0
-
-- **Fixed: zones stopped working while Task View / Start / Search was open.**
-  Those are shell surfaces that exactly match the monitor size, so the
-  fullscreen-app guard classified them as fullscreen games and suppressed
-  every trigger until they closed. v2.x was immune only by accident — it ran
-  inside explorer.exe and skipped windows belonging to its own process, and
-  Task View *is* explorer.exe. Moving to a dedicated process silently
-  invalidated that test. The guard now compares against the shell's process,
-  which is what was always meant.
-- Removed a 150 ms diagnostic delay per action that could back up the queue.
-- Zone sizes are clamped per monitor so the eight zones can never overlap:
-  a corner larger than half the screen, or an edge thicker than the corner
-  box, previously made one zone shadow another (only the first was reachable).
-
-## What's New in v3.0.2
-
-- **Zones no longer fire when you just pass through them.** A corner cannot be
-  reached without crossing the edge strip beside it, so moving into a corner
-  fired the edge action ~30 ms before the corner one. With a toggle bound to
-  both (Task View, Show Desktop) that opened and instantly re-closed — looking
-  exactly like the mod did nothing. The new **Pass-through guard** setting
-  (80 ms) requires the cursor to settle, so only the zone you stop in fires.
-- `SendInput` failures are now logged instead of silently discarded.
-- Each trigger logs the foreground window before and after, so a cancelled
-  toggle is visible in the log rather than looking like success.
-
-## What's New in v3.0.1
-
-- Fixed the mod never loading. v3.0.0 kept the `@architecture x86-64` line
-  from v2.x, but `windhawk.exe` is a 32-bit process — so the mod was only ever
-  built as a 64-bit DLL and Windhawk had nothing to inject. No logs, no zones,
-  no sign of life. Tool mods must not restrict architecture.
-
-## What's New in v3.0.0
-
-- **Runs as a dedicated process** instead of injecting into explorer.exe.
-  Detection no longer shares a thread with the taskbar — that shared thread
-  was why zones fired seconds late or not at all.
-- **Polled detection replaces the low-level mouse hook.** The old hook was
-  installed on explorer's taskbar thread; whenever that thread was busy,
-  Windows skipped the callback and could silently remove the hook. Polling is
-  immune to that, to UIPI, and to elevated foreground apps — and it stops
-  routing every mouse event on the system through explorer.
-- **Monitors identified by friendly name**, not by position in a sorted list.
-- **Per-monitor DPI awareness pinned explicitly**, fixing zones landing at
-  the wrong coordinates on mixed-scaling multi-monitor setups.
-- **Actions run on a worker thread**, so a slow launch can never delay
-  detection.
-- Display-layout changes are picked up even when Windows doesn't send
-  `WM_DISPLAYCHANGE` (docking, monitor wake, RDP reconnect).
+Copy the text inside the quotes. Two identical displays get a ` #2`, ` #3`
+suffix so each stays separately configurable — but those suffixes are handed out
+in listed order (primary first, then left to right), so unlike the names
+themselves they can move. Making the other twin primary swaps which one is ` #2`
+and swaps the configuration with it. Check the log after a change like that.
+
+### Corners between two screens are a trap
+
+Windows lets the pointer cross freely between adjacent monitors, so a corner on
+a shared boundary has nothing to stop the cursor against. It is hard to hit on
+purpose and easy to hit by accident. Prefer the outer perimeter of your
+arrangement — the pointer physically stops there, and that is what makes hot
+corners feel reliable on macOS.
+
+## The tray icon and dashboard
+
+![The Zones and settings window](https://raw.githubusercontent.com/DhakadG/my-windhawk-mods/main/docs/media/dashboard.png)
+
+**Right-click → Zones & settings…** opens the window above: a tab per display, a
+diagram of that screen with each zone's action drawn in it, and — for whichever
+zone you point at — the timings actually in effect, each marked *global* or
+*this zone*. It is a read-only picture of what the settings page produced, so it
+can never disagree with what actually fires.
+
+**Left-click** turns the hot corners on and off; the icon dims when they are
+off. **Right-click** also offers a temporary suspend.
+
+If the icon is hidden, it is in the overflow area — drag it onto the taskbar to
+keep it there.
+
+## Staying out of your way
+
+Four separate guards, because a hot corner that fires while you are working is
+worse than one that never fires at all.
+
+| Setting | What it does |
+| --- | --- |
+| **Pass-through guard** | Ignores a zone you were merely travelling across. 80 ms by default. Raise this first if things fire while you are just moving around. |
+| **Cooldown** | Minimum gap between two firings of the same zone. A cooldown is a wait, not a refusal — park in the corner and it fires once the wait is over. |
+| **Skip while a window is fullscreen** | Suppresses zones on the display the fullscreen window is on, so games and presentations are left alone. |
+| **Skip while dragging** | Nothing fires while a mouse button is held, so dragging a window or selecting text into a corner is safe. |
+
+**Excluded applications** takes a semicolon-separated list of process names,
+case-insensitive: `photoshop.exe;premiere.exe;blender.exe`. Every zone goes
+quiet while one of those is in the foreground — for apps that need the corners
+and edges for themselves.
+
+**Keep zones out of the taskbar** shrinks each display's zones to its working
+area, if you would rather a bottom corner not sit behind the taskbar.
+
+## Why it works this way
+
+If you have wondered why a setting behaves the way it does, or you are weighing
+this against another hot-corners tool, here is the reasoning behind the choices
+that are easiest to second-guess.
+
+**Polling, not a mouse hook.** A `WH_MOUSE_LL` hook sits directly on the system
+input path: every mouse event in every process waits for it, and if it is slow
+even once Windows silently unhooks it (`LowLevelHooksTimeout`). A dedicated
+thread sampling the cursor costs a `GetCursorPos` per tick and cannot make your
+mouse stutter. The tick asks for 16 ms and gets 16–31 ms, because that is the
+system timer resolution.
+
+**Its own process, not injected into Explorer.** The mod does nothing to other
+processes, so there is no reason to be inside one. An Explorer crash cannot take
+it down, and it cannot take Explorer down.
+
+**Displays are bound by name, not by position.** Enumeration order changes
+whenever you rearrange screens or make a different one primary. Friendly names
+come from the display's EDID and survive that, so your corners stay on the
+screen you set them on. Two identical models are the exception — they get a
+` #2` suffix handed out in enumeration order, so that pair *can* swap.
+
+**The settings page is the only place anything is stored.** A Windhawk mod can
+read its settings but cannot write them, so a mod that also edits its own
+configuration in its own window will always end up with two copies that
+disagree. The dashboard is a picture of what the settings produced, and nothing
+else. It reads the resolved configuration rather than the stored one, which is
+what stops it from ever disagreeing with what actually fires.
+
+**Each edge is three segments that merge back together.** Three separate zones
+carrying the same action would each re-arm as the pointer crossed a seam, so
+sliding along an edge would fire it repeatedly. Segments that resolve
+identically are coalesced into one zone before detection ever sees them, which
+is what makes "all three the same" genuinely one edge-wide zone.
+
+**Zones can never overlap.** Each edge's thickness is clamped to the smaller of
+the two corners it runs between. That one rule is what keeps all sixteen zones
+disjoint no matter which sizes you pick, without any special cases.
+
+**A cooldown is a wait, not a refusal.** Landing in a corner while a cooldown is
+running does not spend the visit — the dwell simply outlasts it and the zone
+fires. Marking the visit spent meant parking in a corner did nothing at all and
+you had to leave and come back.
+
+**A rebuild is not a gesture.** Enabling the mod, changing a setting or waking a
+monitor rebuilds the zones, and the pointer may already be sitting in one. The
+rebuild adopts that zone with the visit already spent, so a corner bound to
+*Lock* cannot lock the machine because a display woke up.
+
+**A held modifier is released before a key action, and never re-pressed.**
+Windows merges whatever you are physically holding into an injected shortcut, so
+without this a Ctrl-guarded zone bound to *Snap left* would send Ctrl+Win+Left
+and switch virtual desktop instead — or, on a single desktop, do nothing at all.
+Restoring the key afterwards sounds tidier and is a trap: if you let go in
+between, a key-down goes out with no matching key-up and the modifier is stuck
+down for the rest of the session. A stray key-up cannot cause that, so this
+releases and stops there.
+
+**The fullscreen and excluded-app checks run on the worker thread**, not on the
+sampling thread, so a slow `OpenProcess` can never delay cursor sampling. The
+cost is that a suppressed trigger still consumes its cooldown — a wait nobody
+can perceive, traded for a sampling path that never stalls.
+
+## Related mods
+
+If all you want is one specific behaviour, a smaller mod may suit you better:
+
+- **edge-hot-corner-desktop-switch** — hovering the left or right screen edge
+  switches virtual desktop. This mod does that too, as one of the actions you
+  can assign, but if it is the only thing you are after that one is far simpler.
+- **hotcorner-hotkeys** — sends a key combination from a corner. Different
+  trigger model: it dispatches on a hotkey rather than on hover.
+
+## Bugs and requests
+
+Please open an issue at
+[github.com/DhakadG/my-windhawk-mods](https://github.com/DhakadG/my-windhawk-mods/issues).
+If a zone is not firing, this mod's log (Windhawk → this mod → **Advanced** →
+**Mod log**) says which zone the pointer entered and why nothing happened, and
+pasting that in saves a round trip.
+
+## Support the mod
+
+This is free and always will be. If it earned you back some clicks and you feel
+like buying me a coffee:
+
+- [Ko-fi](https://ko-fi.com/losthusky_)
+- [Buy Me a Coffee](https://www.buymeacoffee.com/losthusky_)
+- [Playto](https://www.playto.so/losthusky_)
 */
 // ==/WindhawkModReadme==
 
+// ==WindhawkModSettings==
+/*
+- displays:
+  - - monitor: "*"
+      $name: Display
+      $description: >-
+        The display's friendly name, exactly as this mod prints it in the log,
+        or  *  to apply this configuration to every display. Open the log, or
+        the dashboard's tab strip, to see the names.
+    - zones:
+      - - zone: TOP_LEFT
+          $name: Zone
+          $options:
+          - TOP_LEFT: Top-left corner
+          - TOP_RIGHT: Top-right corner
+          - BOTTOM_LEFT: Bottom-left corner
+          - BOTTOM_RIGHT: Bottom-right corner
+          - TOP_START: "Top edge: left"
+          - TOP_MIDDLE: "Top edge: centre"
+          - TOP_END: "Top edge: right"
+          - BOTTOM_START: "Bottom edge: left"
+          - BOTTOM_MIDDLE: "Bottom edge: centre"
+          - BOTTOM_END: "Bottom edge: right"
+          - LEFT_START: "Left edge: top"
+          - LEFT_MIDDLE: "Left edge: middle"
+          - LEFT_END: "Left edge: bottom"
+          - RIGHT_START: "Right edge: top"
+          - RIGHT_MIDDLE: "Right edge: middle"
+          - RIGHT_END: "Right edge: bottom"
+        - action: ACTION_NOTHING
+          $name: Action
+          $options:
+          - ACTION_NOTHING: Nothing
+          - ACTION_DISABLED_HERE: "Disabled here (ignore the * entry)"
+          - ACTION_SHOW_DESKTOP: Show desktop
+          - ACTION_TASK_VIEW: Task View
+          - ACTION_SCREENSAVER: Start screensaver
+          - ACTION_MONITORS_OFF: Turn monitors off
+          - ACTION_QUICK_SETTINGS: Quick Settings
+          - ACTION_NOTIFICATION_CENTER: Notification Centre
+          - ACTION_START_MENU: Start menu
+          - ACTION_HIDE_OTHERS: Hide other windows
+          - ACTION_MUTE: Mute
+          - ACTION_TASK_MANAGER: Task Manager
+          - ACTION_LOCK: Lock
+          - ACTION_SLEEP: Sleep
+          - ACTION_SWITCH_LAST: Switch to last window
+          - ACTION_TASK_SWITCHER: Task switcher
+          - ACTION_MINIMIZE: Minimise window
+          - ACTION_MAXIMIZE: Maximise window
+          - ACTION_SNAP_LEFT: Snap left
+          - ACTION_SNAP_RIGHT: Snap right
+          - ACTION_CLOSE_WINDOW: Close window
+          - ACTION_FILE_EXPLORER: File Explorer
+          - ACTION_SETTINGS: Settings
+          - ACTION_SEARCH: Search
+          - ACTION_CLIPBOARD: Clipboard history
+          - ACTION_SCREENSHOT: Screenshot
+          - ACTION_PROJECT: Project display
+          - ACTION_VDESK_NEXT: Next virtual desktop
+          - ACTION_VDESK_PREV: Previous virtual desktop
+          - ACTION_VDESK_NEW: New virtual desktop
+          - ACTION_VDESK_CLOSE: Close virtual desktop
+          - ACTION_LOCK_MONITORS_OFF: Lock and turn monitors off
+          - ACTION_KEEP_AWAKE_ON: Keep awake on
+          - ACTION_KEEP_AWAKE_OFF: Keep awake off
+          - ACTION_SEND_KEYPRESS: Send key press
+          - ACTION_ALTERNATE_KEYPRESS: Alternate key press
+          - ACTION_START_PROCESS: Custom command
+          - ACTION_ALTERNATE_COMMAND: Alternate command
+        - args: ""
+          $name: Arguments
+          $description: >-
+            Only used by some actions. Send key press takes a combination such
+            as  Ctrl+Shift+Esc . Custom command takes an executable, path or
+            URL. The two Alternate actions take both halves separated by a
+            vertical bar, for example  Alt+S | Alt+H .
+        - releaseAction: ACTION_NOTHING
+          $name: Hold - action when the pointer leaves
+          $description: >-
+            Leave this as Nothing for a normal zone, which fires once on
+            arrival. Set anything else and the zone becomes a hold zone: the
+            action above runs when the pointer arrives, and this one runs when
+            it leaves again. That is what the old Show Desktop button did -
+            peek while the pointer rests on it, put everything back when it
+            moves away.
+
+            "The same action again" is what you want for a toggle such as Show
+            Desktop, Mute or Keep Awake, and it stays in step if you change the
+            action above later.
+          $options:
+          - ACTION_NOTHING: "Nothing (fire once on arrival)"
+          - ACTION_SAME: The same action again
+          - ACTION_SHOW_DESKTOP: Show desktop
+          - ACTION_TASK_VIEW: Task View
+          - ACTION_QUICK_SETTINGS: Quick Settings
+          - ACTION_NOTIFICATION_CENTER: Notification Centre
+          - ACTION_START_MENU: Start menu
+          - ACTION_MUTE: Mute
+          - ACTION_MINIMIZE: Minimise window
+          - ACTION_MAXIMIZE: Maximise window
+          - ACTION_KEEP_AWAKE_ON: Keep awake on
+          - ACTION_KEEP_AWAKE_OFF: Keep awake off
+          - ACTION_SEND_KEYPRESS: Send key press
+          - ACTION_START_PROCESS: Custom command
+        - releaseArgs: ""
+          $name: Hold - release arguments
+          $description: >-
+            Only used when the release action is Send key press or Custom
+            command. Ignored by "The same action again", which reuses the
+            arguments above.
+        - size: -1
+          $name: Size override (px)
+          $description: >-
+            Corner square, or edge strip thickness. -1 keeps the global value.
+            An edge is one strip, so its three segments share a thickness: the
+            first segment that sets one decides it for the whole edge.
+        - delay: -1
+          $name: Activation delay override (ms)
+          $description: -1 keeps the global value.
+        - settle: -1
+          $name: Pass-through guard override (ms)
+          $description: -1 keeps the global value.
+        - knock: -1
+          $name: Knock window override (ms)
+          $description: -1 keeps the global value. 0 disables knock mode.
+        - cooldown: -1
+          $name: Cooldown override (ms)
+          $description: -1 keeps the global value.
+        - modifier: INHERIT
+          $name: Modifier override
+          $options:
+          - INHERIT: Keep the global value
+          - NONE: None
+          - CTRL: Ctrl
+          - ALT: Alt
+          - SHIFT: Shift
+          - WIN: Win
+      $name: Zones
+      $description: >-
+        One entry per zone you want active on this display. A zone you do not
+        list does nothing. Listing the same zone twice uses the first entry.
+
+        Each edge is three segments. Give them three different actions for
+        three separate zones, or give neighbouring segments the same action
+        and they merge into one - so all three alike is a single edge-wide
+        zone, and left+centre alike with a different right is two.
+
+        "Merge" means identical: same action, same arguments and the same
+        overrides. Two segments running the same action with different
+        cooldowns stay separate.
+  $name: Displays
+  $description: >-
+    Add one entry per display you want to configure, or a single entry with
+    *  as the name to cover every display at once.
+
+- cornerSize: 6
+  $name: Corner size (px)
+  $description: How far into the corner the pointer has to reach.
+- edgeSize: 6
+  $name: Edge thickness (px)
+- centerPercent: 20
+  $name: Edge centre width (%)
+  $description: How much of each edge the centre zone occupies.
+
+- delay: 0
+  $name: Activation delay (ms)
+  $description: How long the pointer must rest in a zone before it fires.
+- settle: 80
+  $name: Pass-through guard (ms)
+  $description: >-
+    Ignores a zone the pointer is merely travelling through. Raise it if
+    actions fire while you are moving to something else.
+- knock: 0
+  $name: Knock window (ms)
+  $description: >-
+    0 disables knock mode. Above 0, the zone has to be entered twice within
+    this window before it fires.
+- cooldown: 300
+  $name: Cooldown (ms)
+  $description: Minimum gap between two firings of the same zone.
+- requireModifier: NONE
+  $name: Required modifier
+  $description: A key that must be held for any zone to fire.
+  $options:
+  - NONE: None
+  - CTRL: Ctrl
+  - ALT: Alt
+  - SHIFT: Shift
+  - WIN: Win
+
+- disableOnFullscreen: true
+  $name: Skip while a window is fullscreen
+  $description: Only suppresses the display the fullscreen window is on.
+- disableDuringDrag: true
+  $name: Skip while dragging
+- avoidTaskbar: false
+  $name: Keep zones out of the taskbar
+  $description: >-
+    Shrinks each display's zones to its working area, so a corner sitting
+    behind the taskbar cannot be reached.
+- excluded: ""
+  $name: Excluded applications
+  $description: >-
+    Semicolon-separated executable names, for example  game.exe; vlc.exe .
+    Zones do nothing while one of these is in the foreground.
+
+- lockBlankDelay: 1200
+  $name: Lock-then-blank delay (ms)
+  $description: >-
+    How long "Lock and turn monitors off" waits after locking before blanking.
+- showMonitorNames: true
+  $name: List display names in the log
+*/
+// ==/WindhawkModSettings==
+
 #include <windows.h>
 
-#include <commctrl.h>
 #include <windowsx.h>   // GET_X_LPARAM / GET_Y_LPARAM
 #include <initializer_list>
 #include <powrprof.h>
@@ -596,10 +680,9 @@ twice a second, leaving the tick to one cursor read plus a few comparisons.
 
 #include <algorithm>
 #include <atomic>
-// swprintf_s / _wtoi / memcmp are used directly; they only reached this file
+// swprintf_s and memcmp are used directly; they only reached this file
 // through <windows.h> before.
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <cwchar>
 #include <cwctype>
@@ -610,9 +693,6 @@ twice a second, leaving the tick to one cursor read plus a few comparisons.
 #include <unordered_map>
 #include <vector>
 
-// Undocumented Shell command ID for IShellDispatch::ToggleDesktop
-#define SHELL_TRAY_TOGGLE_DESKTOP 407
-
 // =====================================================================
 // Enums & Types
 // =====================================================================
@@ -620,6 +700,15 @@ twice a second, leaving the tick to one cursor read plus a few comparisons.
 enum class CornerAction
 {
     Nothing,
+    // Explicitly off on this display, as opposed to "not configured". Only the
+    // second falls through to the "*" entry, so this is what lets one screen
+    // opt out of a shared zone without abandoning the wildcard everywhere.
+    DisabledHere,
+    // Release-action only: repeat whatever the zone does on entry. Every
+    // toggle - Show Desktop, Mute, Keep Awake - wants exactly this, so it
+    // saves picking the same entry twice and keeps the pair in step if the
+    // entry action is later changed.
+    SameAsEntry,
     ShowDesktop,
     TaskView,
     ScreenSaver,
@@ -658,23 +747,49 @@ enum class CornerAction
     StartProcess,
 };
 
-// Zone IDs: 0-3 = corners, 4-7 = edges
+// Zone IDs: 0-3 corners, then each edge as three independently configurable
+// segments running between the two corners it touches.
+//
+// An edge used to be one zone plus an optional centre, so the two outer
+// stretches always did the same thing. Splitting them into start/middle/end
+// makes every pattern expressible - ABC, AAB, ABB - and setting all three the
+// same gives one edge-wide zone, because BuildZoneSet coalesces neighbouring
+// segments that resolve identically. That coalescing matters: three separate
+// zones carrying one action would each re-arm as the pointer crossed a seam.
 enum Zone
 {
     ZONE_TOP_LEFT = 0,
     ZONE_TOP_RIGHT = 1,
     ZONE_BOTTOM_LEFT = 2,
     ZONE_BOTTOM_RIGHT = 3,
-    ZONE_EDGE_TOP = 4,
-    ZONE_EDGE_BOTTOM = 5,
-    ZONE_EDGE_LEFT = 6,
-    ZONE_EDGE_RIGHT = 7,
-    ZONE_CENTER_TOP = 8,
-    ZONE_CENTER_BOTTOM = 9,
-    ZONE_CENTER_LEFT = 10,
-    ZONE_CENTER_RIGHT = 11,
-    ZONE_COUNT = 12,
+
+    ZONE_TOP_START = 4,      // left-hand stretch of the top edge
+    ZONE_TOP_MIDDLE = 5,
+    ZONE_TOP_END = 6,        // right-hand stretch
+
+    ZONE_BOTTOM_START = 7,
+    ZONE_BOTTOM_MIDDLE = 8,
+    ZONE_BOTTOM_END = 9,
+
+    ZONE_LEFT_START = 10,    // upper stretch of the left edge
+    ZONE_LEFT_MIDDLE = 11,
+    ZONE_LEFT_END = 12,      // lower stretch
+
+    ZONE_RIGHT_START = 13,
+    ZONE_RIGHT_MIDDLE = 14,
+    ZONE_RIGHT_END = 15,
+
+    ZONE_COUNT = 16,
 };
+
+// Values for ZoneTuning::modifier and ModSettings::requireModifier. Named
+// together rather than one of them, so the set reads as an enumeration rather
+// than as one arbitrary special case.
+static constexpr int kModifierNone = 0;
+static constexpr int kModifierCtrl = 1;
+static constexpr int kModifierAlt = 2;
+static constexpr int kModifierShift = 3;
+static constexpr int kModifierWin = 4;
 
 // Per-zone overrides. Every numeric field uses -1 for "inherit the global
 // value", so an untouched zone behaves exactly as it did before per-zone
@@ -686,7 +801,7 @@ struct ZoneTuning
     int settle = -1;    // pass-through guard, ms
     int knock = -1;     // knock window, ms
     int cooldown = -1;  // per-zone cooldown, ms
-    int modifier = -1;  // 0 none, 1 Ctrl, 2 Alt, 3 Shift, 4 Win
+    int modifier = -1;  // kModifier* above, or -1 to inherit
 };
 
 struct ZoneConfig
@@ -695,6 +810,15 @@ struct ZoneConfig
     std::wstring args;
     std::function<void()> executor;
     ZoneTuning tuning;
+
+    // Hold: a second action fired when the pointer leaves the zone again.
+    // Anything other than Nothing here turns the zone into a hold zone, which
+    // is what the old Show Desktop button did - peek while the pointer is on
+    // it, put everything back when it leaves. Setting this to "the same action"
+    // covers every toggle, which is the common case.
+    CornerAction releaseAction = CornerAction::Nothing;
+    std::wstring releaseArgs;
+    std::function<void()> releaseExecutor;
 };
 
 struct MonitorZoneConfig
@@ -722,6 +846,25 @@ struct HitZone
     std::function<void()> exec;
     std::wstring label;  // "Dell U2720Q Top-left corner -> Task View"
 
+    // Carried only so SameZoneSet can tell two sets apart. The label holds the
+    // action's *name* but not its arguments, so without these, changing a
+    // custom command or a key combination produced a set that compared equal -
+    // the rebuild was skipped and the old executor stayed live.
+    CornerAction action = CornerAction::Nothing;
+    std::wstring args;
+
+    // Set only on a hold zone. The detection loop queues this when the pointer
+    // leaves, if the zone had already fired on the way in.
+    std::function<void()> releaseExec;
+    CornerAction releaseAction = CornerAction::Nothing;
+    std::wstring releaseArgs;
+
+    // Queue bookkeeping, set per job rather than per zone. The detection thread
+    // decides that a release is *owed*; only the worker knows whether the entry
+    // it would undo actually ran, because the gates live there.
+    bool engagesHold = false;
+    bool isRelease = false;
+
     // Resolved once at build time - zone override if set, otherwise the
     // global. The detection loop therefore never has to know that per-zone
     // settings exist.
@@ -745,15 +888,33 @@ struct HitZone
 struct ZoneSet
 {
     std::vector<HitZone> zones;
-    // Friendly names of the displays this set was built from. They ride in the
-    // snapshot so the dashboard thread can list monitors without reading
-    // g_monitors, which the detection thread clears and refills underneath it.
-    std::vector<std::wstring> monitorNames;
+    // The displays this set was built from. They ride in the snapshot so the
+    // dashboard thread can list monitors without reading g_monitors, which the
+    // detection thread clears and refills underneath it. The size comes along
+    // because the dashboard draws each screen at its real aspect ratio.
+    struct MonitorSummary
+    {
+        std::wstring id;
+        int width = 0;
+        int height = 0;
+        // BuildZoneSet clamps against the work area when "Keep zones out of
+        // the taskbar" is on, so the dashboard needs both to report the size a
+        // zone will really use rather than one measured against a rect the
+        // builder did not use.
+        int workWidth = 0;
+        int workHeight = 0;
+        bool primary = false;
+    };
+    std::vector<MonitorSummary> monitors;
     // Only what the detection loop actually reads. The timings live on each
     // HitZone, resolved at build time, which is the whole point of resolving
     // them there; a second copy here would just be a second thing to keep
     // in step.
     bool disableDuringDrag = true;
+    // Carried only so RebuildZones can name them in the log it prints past its
+    // no-op check; detection never reads these.
+    int cornerSizeCfg = 0;
+    int edgeSizeCfg = 0;
 };
 
 // =====================================================================
@@ -813,11 +974,14 @@ static constexpr DWORD kTickMs = 16;
 static constexpr DWORD kIdleTickMs = 100;
 static HANDLE g_hDetectThread = nullptr;
 static DWORD g_dwDetectThreadId = 0;
-static HWND g_hDetectWnd = nullptr;
+// Written by the detection thread, read from Windhawk's thread and the tray
+// thread. Same reasoning as g_hDashWnd: without release/acquire, a reader can
+// still see nullptr just after startup and silently drop a rebuild request.
+static std::atomic<HWND> g_hDetectWnd{nullptr};
 static HANDLE g_hStopEvent = nullptr;
 
-// Prints the monitor list at load and on display changes, so names can be
-// copied into the monitor selector instead of guessed. Cheap - once per event.
+// Prints the monitor list at load and on display changes, so a name can be
+// copied into the settings page instead of guessed. Cheap - once per event.
 static std::atomic<bool> g_showMonitorNames{true};
 
 // Master switch and temporary suspend, both driven from the tray icon.
@@ -854,6 +1018,11 @@ static int g_activeZone = -1;
 static ULONGLONG g_enterTick = 0;
 static bool g_firedThisEntry = false;
 static bool g_knockSatisfied = true;
+// A hold zone has engaged and owes its release. Kept apart from
+// g_firedThisEntry because the two answer different questions: that one is
+// "has this visit been spent", which stays true after a release so the zone
+// cannot re-fire without leaving first.
+static bool g_holdEngaged = false;
 static std::vector<ULONGLONG> g_lastFireTick;
 // When each zone was last left, for knock detection.
 static std::vector<ULONGLONG> g_lastExitTick;
@@ -867,6 +1036,12 @@ static RECT g_topoVirtual = {};
 static RECT g_topoWorkArea = {};
 
 static constexpr UINT WM_APP_REBUILD = WM_APP + 1;
+
+// Sent (not posted) from WhTool_ModUninit while both threads are still alive,
+// so a hold that is still engaged gets its release queued before anything is
+// told to stop. Posting would not do - the detection thread would never get
+// round to it.
+static constexpr UINT WM_APP_RELEASE_HOLD = WM_APP + 2;
 
 // Forward declarations
 static const wchar_t *ZoneToString(Zone z);
@@ -1283,15 +1458,24 @@ static void RefreshMonitors()
             m.id += L" #" + std::to_wstring(n);
     }
 
+}
+
+// Split out of RefreshMonitors so it can be called past RebuildZones' no-op
+// check. An SPI_SETWORKAREA burst dispatches one rebuild per broadcast and the
+// result is usually identical, so printing from RefreshMonitors put five-plus
+// lines in the log per broadcast for a change nobody made.
+static void LogMonitors()
+{
     if (!g_showMonitorNames)
         return;
 
-    // Printed so the name can be copied straight into the Monitor setting,
-    // rather than guessed. Once per load and per display change only.
+    // Printed so the name can be copied straight into the settings page rather
+    // than guessed. Once per load and per display change only.
     Wh_Log(L" ");
     Wh_Log(L"+-- Your monitors ---------------------------------------");
-    Wh_Log(L"|  These are the displays in the dashboard's monitor selector.");
-    Wh_Log(L"|  Use  *  to apply one configuration to every monitor.");
+    Wh_Log(L"|  Copy a name into the \"Display\" field on this mod's settings "
+           L"page.");
+    Wh_Log(L"|  Use  *  there to apply one configuration to every monitor.");
     Wh_Log(L"|");
     for (const auto &m : g_monitors)
     {
@@ -1309,13 +1493,6 @@ static void RefreshMonitors()
 // Fullscreen / Exclusion Gates (worker thread only)
 // =====================================================================
 
-// Task View, the Start menu, Search, Action Center and the desktop are shell
-// surfaces that are legitimately monitor-sized, so the bounds test below
-// mistakes them for fullscreen apps and blocks every trigger while they are
-// open. v2.x excluded them with `fgPid == GetCurrentProcessId()` because it
-// ran inside explorer.exe; once the mod moved to its own process that test
-// silently stopped matching anything. Compare against the *shell's* pid
-// instead, which is what was actually meant.
 // Lowercase exe name of the window's owning process, or empty on failure.
 static std::wstring ProcessNameOfWindow(HWND hwnd)
 {
@@ -1328,15 +1505,28 @@ static std::wstring ProcessNameOfWindow(HWND hwnd)
     if (!hProc)
         return L"";
 
-    WCHAR exePath[MAX_PATH];
-    DWORD pathLen = MAX_PATH;
-    BOOL ok = QueryFullProcessImageNameW(hProc, 0, exePath, &pathLen);
+    // MAX_PATH is not the limit for a process image path, and the failure is
+    // silent in the worst way: QueryFullProcessImageNameW returns
+    // ERROR_INSUFFICIENT_BUFFER, this returns L"", and the Excluded
+    // applications list then never matches that process - while
+    // IsForegroundAppExcluded caches the empty answer until the foreground
+    // window changes.
+    std::wstring exePath(MAX_PATH, L'\0');
+    DWORD pathLen = (DWORD)exePath.size();
+    BOOL ok = QueryFullProcessImageNameW(hProc, 0, exePath.data(), &pathLen);
+    if (!ok && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+    {
+        exePath.assign(32768, L'\0');
+        pathLen = (DWORD)exePath.size();
+        ok = QueryFullProcessImageNameW(hProc, 0, exePath.data(), &pathLen);
+    }
     CloseHandle(hProc);
     if (!ok)
         return L"";
+    exePath.resize(pathLen);
 
-    const wchar_t *fileName = wcsrchr(exePath, L'\\');
-    return fileName ? fileName + 1 : exePath;
+    size_t slash = exePath.find_last_of(L'\\');
+    return slash == std::wstring::npos ? exePath : exePath.substr(slash + 1);
 }
 
 static bool IsShellUiWindow(HWND hwnd)
@@ -1467,27 +1657,7 @@ static bool IsForegroundAppExcluded(const std::vector<std::wstring> &excluded)
     if (hFg != cachedHwnd)
     {
         cachedHwnd = hFg;
-        cachedName.clear();
-
-        DWORD pid = 0;
-        GetWindowThreadProcessId(hFg, &pid);
-        if (pid == 0)
-            return false;
-
-        HANDLE hProc =
-            OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
-        if (!hProc)
-            return false;
-
-        WCHAR exePath[MAX_PATH];
-        DWORD pathLen = MAX_PATH;
-        BOOL ok = QueryFullProcessImageNameW(hProc, 0, exePath, &pathLen);
-        CloseHandle(hProc);
-        if (!ok)
-            return false;
-
-        const wchar_t *fileName = wcsrchr(exePath, L'\\');
-        cachedName = fileName ? fileName + 1 : exePath;
+        cachedName = ProcessNameOfWindow(hFg);
     }
 
     if (cachedName.empty())
@@ -1510,15 +1680,18 @@ static bool IsForegroundAppExcluded(const std::vector<std::wstring> &excluded)
 // Sends key-down for all VKs in order, then key-up in reverse order, as one
 // atomic SendInput batch.
 //
-// Earlier versions also released any modifier the user was physically holding
-// and re-pressed it afterwards. That was removed deliberately: re-pressing is
-// only correct if the key is still held when the restore runs. If the user let
-// go in between — or the restore SendInput failed, or the thread was torn down
-// between the two calls — a key-down was injected with no matching key-up and
-// the modifier stayed logically stuck down for the whole session. A stuck Win
-// or Ctrl key breaks every application at once, which is far worse than the
-// problem it solved (a held Shift leaking into the injected combo).
-// Every key this function presses, it releases in the same batch.
+// Any modifier the user is physically holding is released first, so it cannot
+// leak into the injected combination. It is never re-pressed afterwards, and
+// that asymmetry is the whole point: an earlier version restored the key and
+// could leave it logically stuck down for the rest of the session, because a
+// re-press is only correct if the key is still held when the restore runs. If
+// the user let go in between — or the restore SendInput failed, or the thread
+// was torn down between the two calls — a key-down went out with no matching
+// key-up. A stuck Win or Ctrl breaks every application at once.
+//
+// A key-up carries no such risk in either direction, so releasing is kept and
+// restoring is not. Every key this function presses, it releases in the same
+// batch.
 // Keys that live on the E0-prefixed part of the keyboard. Injected without
 // KEYEVENTF_EXTENDEDKEY they resolve to their numpad twins, so Win+Right
 // (snap) or a custom combo using arrows/Home/End would do nothing or move the
@@ -1564,14 +1737,62 @@ static void SendKeys(const std::vector<WORD> &vks)
     if (vks.empty())
         return;
 
+    // A modifier the user is physically holding cannot be masked by SendInput:
+    // Windows merges it into whatever this batch presses. A zone with a
+    // required modifier guarantees that happens on every trigger, and it
+    // silently changes the action rather than failing — Snap left (Win+Left)
+    // fired from a Ctrl zone arrives as Ctrl+Win+Left, which switches virtual
+    // desktop, or does nothing whatsoever when there is only one desktop.
+    //
+    // Injecting a release first is safe in the way the old release-then-
+    // re-press pair described above was not. An extra key-up can never leave a
+    // key logically stuck, and the user's own release still delivers its
+    // key-up afterwards. Nothing is re-pressed here, deliberately.
+    static const WORD kMods[] = {VK_LCONTROL, VK_RCONTROL, VK_LMENU, VK_RMENU,
+                                 VK_LSHIFT,   VK_RSHIFT,   VK_LWIN,  VK_RWIN};
+    std::vector<INPUT> inputs;
+    for (WORD mod : kMods)
+    {
+        if (!(GetAsyncKeyState(mod) & 0x8000))
+            continue;
+        // Part of the batch already: it presses and releases this one itself.
+        if (std::find(vks.begin(), vks.end(), mod) != vks.end())
+            continue;
+        // Windows opens the Start menu on a Win key-up that had no other key
+        // pressed between it and the matching key-down - and that is exactly
+        // the shape produced here, because this release is the first thing in
+        // the batch. So a Win-guarded zone bound to anything without Win in it
+        // (Mute, Lock, Close window) would open Start and then run the action.
+        // Pressing and releasing Ctrl first makes the Win-up no longer solo;
+        // Ctrl alone does nothing, and Ctrl+Win is not a shortcut either. This
+        // is the same masking trick AutoHotkey uses.
+        if (mod == VK_LWIN || mod == VK_RWIN)
+        {
+            INPUT mask = {};
+            mask.type = INPUT_KEYBOARD;
+            mask.ki.wVk = VK_CONTROL;
+            inputs.push_back(mask);
+            mask.ki.dwFlags = KEYEVENTF_KEYUP;
+            inputs.push_back(mask);
+        }
+
+        INPUT up = {};
+        up.type = INPUT_KEYBOARD;
+        up.ki.wVk = mod;
+        up.ki.dwFlags =
+            (IsExtendedKey(mod) ? KEYEVENTF_EXTENDEDKEY : 0) | KEYEVENTF_KEYUP;
+        inputs.push_back(up);
+    }
+    const size_t pre = inputs.size();
+
     size_t n = vks.size();
-    std::vector<INPUT> inputs(n * 2);
+    inputs.resize(pre + n * 2);
 
     for (size_t i = 0; i < n; i++)
     {
-        inputs[i].type = INPUT_KEYBOARD;
-        inputs[i].ki.wVk = vks[i];
-        inputs[i].ki.dwFlags =
+        inputs[pre + i].type = INPUT_KEYBOARD;
+        inputs[pre + i].ki.wVk = vks[i];
+        inputs[pre + i].ki.dwFlags =
             IsExtendedKey(vks[i]) ? KEYEVENTF_EXTENDEDKEY : 0;
     }
     for (size_t i = 0; i < n; i++)
@@ -1580,9 +1801,9 @@ static void SendKeys(const std::vector<WORD> &vks)
         // not from vks[i] — the release order is reversed, so using the wrong
         // index would tag the extended bit onto the wrong key.
         WORD vk = vks[n - 1 - i];
-        inputs[n + i].type = INPUT_KEYBOARD;
-        inputs[n + i].ki.wVk = vk;
-        inputs[n + i].ki.dwFlags =
+        inputs[pre + n + i].type = INPUT_KEYBOARD;
+        inputs[pre + n + i].ki.wVk = vk;
+        inputs[pre + n + i].ki.dwFlags =
             (IsExtendedKey(vk) ? KEYEVENTF_EXTENDEDKEY : 0) | KEYEVENTF_KEYUP;
     }
 
@@ -1604,7 +1825,7 @@ static void SendKeys(const std::vector<WORD> &vks)
         // and releasing a key that is already up does nothing, so replay all
         // of them. Nothing was pressed if nothing was sent.
         if (sent > 0)
-            SendInput((UINT)n, inputs.data() + n, sizeof(INPUT));
+            SendInput((UINT)n, inputs.data() + pre + n, sizeof(INPUT));
     }
     else
     {
@@ -1620,22 +1841,15 @@ static void SendKeys(std::initializer_list<WORD> vks)
     SendKeys(v);
 }
 
-static void ActionShowDesktop()
-{
-    // Re-found when the handle goes stale, so this survives explorer restarts.
-    static HWND hTray = nullptr;
-    if (!hTray || !IsWindow(hTray))
-        hTray = FindWindowW(L"Shell_TrayWnd", nullptr);
-    if (!hTray)
-    {
-        Wh_Log(L"Show Desktop: Shell_TrayWnd not found");
-        return;
-    }
-    DWORD_PTR result = 0;
-    SendMessageTimeoutW(hTray, WM_COMMAND,
-                        MAKELONG(SHELL_TRAY_TOGGLE_DESKTOP, 0), 0,
-                        SMTO_ABORTIFHUNG, 2000, &result);
-}
+// Win+D, through the same SendKeys path as every other shortcut action.
+//
+// Two other routes were tried and both are worse. WM_COMMAND 407 to
+// Shell_TrayWnd is an undocumented private message sent to a window this mod
+// does not own. IShellDispatch4::ToggleDesktop is documented, but on Windows 11
+// build 26300 it returns S_OK and does nothing at all - which is the worst
+// possible failure, because there is no error to fall back on. Win+D is a
+// documented user-facing shortcut that the shell implements itself.
+static void ActionShowDesktop() { SendKeys({VK_LWIN, 'D'}); }
 
 static void ActionTaskView() { SendKeys({VK_LWIN, VK_TAB}); }
 
@@ -1880,6 +2094,8 @@ static CornerAction ParseActionType(const std::wstring &raw)
 {
     static const std::unordered_map<std::wstring, CornerAction> map = {
         {L"ACTION_NOTHING", CornerAction::Nothing},
+        {L"ACTION_DISABLED_HERE", CornerAction::DisabledHere},
+        {L"ACTION_SAME", CornerAction::SameAsEntry},
         {L"ACTION_SHOW_DESKTOP", CornerAction::ShowDesktop},
         {L"ACTION_TASK_VIEW", CornerAction::TaskView},
         {L"ACTION_SCREENSAVER", CornerAction::ScreenSaver},
@@ -1927,42 +2143,44 @@ static const wchar_t *ActionToString(CornerAction a)
     switch (a)
     {
     case CornerAction::Nothing: return L"Nothing";
-    case CornerAction::ShowDesktop: return L"Show Desktop";
+    case CornerAction::DisabledHere: return L"Disabled here";
+    case CornerAction::SameAsEntry: return L"the same action again";
+    case CornerAction::ShowDesktop: return L"Show desktop";
     case CornerAction::TaskView: return L"Task View";
-    case CornerAction::ScreenSaver: return L"Screen Saver";
-    case CornerAction::MonitorsOff: return L"Turn Off Monitors";
+    case CornerAction::ScreenSaver: return L"Start screensaver";
+    case CornerAction::MonitorsOff: return L"Turn monitors off";
     case CornerAction::QuickSettings: return L"Quick Settings";
-    case CornerAction::NotificationCenter: return L"Notification Center";
-    case CornerAction::StartMenu: return L"Start Menu";
-    case CornerAction::HideOthers: return L"Hide Other Windows";
+    case CornerAction::NotificationCenter: return L"Notification Centre";
+    case CornerAction::StartMenu: return L"Start menu";
+    case CornerAction::HideOthers: return L"Hide other windows";
     case CornerAction::Mute: return L"Mute";
     case CornerAction::TaskManager: return L"Task Manager";
-    case CornerAction::Lock: return L"Lock Computer";
+    case CornerAction::Lock: return L"Lock";
     case CornerAction::Sleep: return L"Sleep";
-    case CornerAction::SwitchLastWindow: return L"Switch to Last Window";
-    case CornerAction::TaskSwitcher: return L"Task Switcher";
-    case CornerAction::MinimizeWindow: return L"Minimize Window";
-    case CornerAction::MaximizeWindow: return L"Maximize Window";
-    case CornerAction::SnapLeft: return L"Snap Left";
-    case CornerAction::SnapRight: return L"Snap Right";
-    case CornerAction::CloseWindow: return L"Close Window";
+    case CornerAction::SwitchLastWindow: return L"Switch to last window";
+    case CornerAction::TaskSwitcher: return L"Task switcher";
+    case CornerAction::MinimizeWindow: return L"Minimise window";
+    case CornerAction::MaximizeWindow: return L"Maximise window";
+    case CornerAction::SnapLeft: return L"Snap left";
+    case CornerAction::SnapRight: return L"Snap right";
+    case CornerAction::CloseWindow: return L"Close window";
     case CornerAction::FileExplorer: return L"File Explorer";
     case CornerAction::SettingsApp: return L"Settings";
     case CornerAction::Search: return L"Search";
-    case CornerAction::ClipboardHistory: return L"Clipboard History";
+    case CornerAction::ClipboardHistory: return L"Clipboard history";
     case CornerAction::Screenshot: return L"Screenshot";
-    case CornerAction::ProjectDisplay: return L"Project";
-    case CornerAction::VDesktopNext: return L"Virtual Desktop Next";
-    case CornerAction::VDesktopPrev: return L"Virtual Desktop Previous";
-    case CornerAction::VDesktopNew: return L"Virtual Desktop New";
-    case CornerAction::VDesktopClose: return L"Virtual Desktop Close";
-    case CornerAction::LockAndMonitorsOff: return L"Lock and Turn Off Monitors";
-    case CornerAction::KeepAwakeOn: return L"Keep Awake On";
-    case CornerAction::KeepAwakeOff: return L"Keep Awake Off";
-    case CornerAction::AlternateKeypress: return L"Alternate Key Press";
-    case CornerAction::AlternateCommand: return L"Alternate Command";
-    case CornerAction::SendKeypress: return L"Virtual Key Press";
-    case CornerAction::StartProcess: return L"Custom Command";
+    case CornerAction::ProjectDisplay: return L"Project display";
+    case CornerAction::VDesktopNext: return L"Next virtual desktop";
+    case CornerAction::VDesktopPrev: return L"Previous virtual desktop";
+    case CornerAction::VDesktopNew: return L"New virtual desktop";
+    case CornerAction::VDesktopClose: return L"Close virtual desktop";
+    case CornerAction::LockAndMonitorsOff: return L"Lock and turn monitors off";
+    case CornerAction::KeepAwakeOn: return L"Keep awake on";
+    case CornerAction::KeepAwakeOff: return L"Keep awake off";
+    case CornerAction::AlternateKeypress: return L"Alternate key press";
+    case CornerAction::AlternateCommand: return L"Alternate command";
+    case CornerAction::SendKeypress: return L"Send key press";
+    case CornerAction::StartProcess: return L"Custom command";
     }
     return L"Unknown";
 }
@@ -1975,14 +2193,18 @@ static const wchar_t *ZoneToString(Zone z)
     case ZONE_TOP_RIGHT: return L"Top-right corner";
     case ZONE_BOTTOM_LEFT: return L"Bottom-left corner";
     case ZONE_BOTTOM_RIGHT: return L"Bottom-right corner";
-    case ZONE_EDGE_TOP: return L"Top edge";
-    case ZONE_EDGE_BOTTOM: return L"Bottom edge";
-    case ZONE_EDGE_LEFT: return L"Left edge";
-    case ZONE_EDGE_RIGHT: return L"Right edge";
-    case ZONE_CENTER_TOP: return L"Top edge centre";
-    case ZONE_CENTER_BOTTOM: return L"Bottom edge centre";
-    case ZONE_CENTER_LEFT: return L"Left edge centre";
-    case ZONE_CENTER_RIGHT: return L"Right edge centre";
+    case ZONE_TOP_START: return L"Top edge, left";
+    case ZONE_TOP_MIDDLE: return L"Top edge, centre";
+    case ZONE_TOP_END: return L"Top edge, right";
+    case ZONE_BOTTOM_START: return L"Bottom edge, left";
+    case ZONE_BOTTOM_MIDDLE: return L"Bottom edge, centre";
+    case ZONE_BOTTOM_END: return L"Bottom edge, right";
+    case ZONE_LEFT_START: return L"Left edge, top";
+    case ZONE_LEFT_MIDDLE: return L"Left edge, middle";
+    case ZONE_LEFT_END: return L"Left edge, bottom";
+    case ZONE_RIGHT_START: return L"Right edge, top";
+    case ZONE_RIGHT_MIDDLE: return L"Right edge, middle";
+    case ZONE_RIGHT_END: return L"Right edge, bottom";
     default: return L"None";
     }
 }
@@ -2006,6 +2228,8 @@ static std::function<void()> MakeExecutor(CornerAction action,
     switch (action)
     {
     case CornerAction::Nothing: return nullptr;
+    case CornerAction::DisabledHere: return nullptr;
+    case CornerAction::SameAsEntry: return nullptr;   // resolved by the caller
     case CornerAction::ShowDesktop: return ActionShowDesktop;
     case CornerAction::TaskView: return ActionTaskView;
     case CornerAction::ScreenSaver: return ActionScreenSaver;
@@ -2042,7 +2266,7 @@ static std::function<void()> MakeExecutor(CornerAction action,
     //
     // Deliberately built as two extra action types rather than by giving every
     // zone a second action + args. That would have doubled a settings block
-    // that is already twelve zones long, for a feature most zones will never
+    // that is already sixteen zones long, for a feature most zones will never
     // use. Here the two halves live in the existing Args field, split on "|",
     // so nothing about the zone structure, the hit test or the detection loop
     // changes at all.
@@ -2129,6 +2353,56 @@ static std::function<void()> MakeExecutor(CornerAction action,
 // Resolves one zone for one monitor. A name-matched config wins; otherwise a
 // wildcard config supplies the action. Resolution is per zone, so a wildcard
 // entry can cover most zones while one display overrides a single corner.
+// Two segments of an edge are interchangeable only if everything about them
+// matches - the same action with a different cooldown still has to stay two
+// zones, because the cooldown is what the merged zone would have to carry.
+static bool SameZoneConfig(const ZoneConfig *a, const ZoneConfig *b)
+{
+    if (a == b)
+        return true;
+    if (!a || !b)
+        return false;
+    if (a->action != b->action || a->args != b->args ||
+        a->releaseAction != b->releaseAction ||
+        a->releaseArgs != b->releaseArgs)
+        return false;
+    const ZoneTuning &x = a->tuning, &y = b->tuning;
+    return x.size == y.size && x.delay == y.delay && x.settle == y.settle &&
+           x.knock == y.knock && x.cooldown == y.cooldown &&
+           x.modifier == y.modifier;
+}
+
+// Both the zone builder and the dashboard need the *effective* size, not the
+// configured one, and they used to disagree: the panel printed the number from
+// the settings under a column headed IN EFFECT while the zone actually fired at
+// the clamped size. One function, called from both.
+static int ClampZoneSize(int requested, int span)
+{
+    int v = requested < 1 ? 1 : requested;
+    if (v > span / 2)
+        v = span / 2;
+    return v < 1 ? 1 : v;
+}
+
+// The two corners an edge runs between; its thickness can never exceed the
+// smaller of them, which is the rule that keeps all sixteen zones disjoint.
+static bool EdgeCorners(Zone z, Zone out[2])
+{
+    switch (z)
+    {
+    case ZONE_TOP_START: case ZONE_TOP_MIDDLE: case ZONE_TOP_END:
+        out[0] = ZONE_TOP_LEFT;    out[1] = ZONE_TOP_RIGHT;    return true;
+    case ZONE_BOTTOM_START: case ZONE_BOTTOM_MIDDLE: case ZONE_BOTTOM_END:
+        out[0] = ZONE_BOTTOM_LEFT; out[1] = ZONE_BOTTOM_RIGHT; return true;
+    case ZONE_LEFT_START: case ZONE_LEFT_MIDDLE: case ZONE_LEFT_END:
+        out[0] = ZONE_TOP_LEFT;    out[1] = ZONE_BOTTOM_LEFT;  return true;
+    case ZONE_RIGHT_START: case ZONE_RIGHT_MIDDLE: case ZONE_RIGHT_END:
+        out[0] = ZONE_TOP_RIGHT;   out[1] = ZONE_BOTTOM_RIGHT; return true;
+    default:
+        return false;
+    }
+}
+
 // Caller must hold g_settingsLock.
 static const ZoneConfig *ResolveZone(const MonitorInfo &mon, Zone zone)
 {
@@ -2140,6 +2414,10 @@ static const ZoneConfig *ResolveZone(const MonitorInfo &mon, Zone zone)
         if (_wcsicmp(cfg.monitorId.c_str(), mon.id.c_str()) != 0)
             continue;
         const auto &zc = cfg.zones[zone];
+        // An explicit opt-out stops here rather than falling through, which is
+        // the whole difference between it and leaving the zone unset.
+        if (zc.action == CornerAction::DisabledHere)
+            return nullptr;
         if (zc.action != CornerAction::Nothing && zc.executor)
             return &zc;
     }
@@ -2172,7 +2450,16 @@ static std::shared_ptr<const ZoneSet> BuildZoneSet()
     set->disableDuringDrag = g_settings.disableDuringDrag;
 
     for (const auto &mon : g_monitors)
-        set->monitorNames.push_back(mon.id);
+    {
+        ZoneSet::MonitorSummary ms;
+        ms.id = mon.id;
+        ms.width = mon.rcMonitor.right - mon.rcMonitor.left;
+        ms.height = mon.rcMonitor.bottom - mon.rcMonitor.top;
+        ms.workWidth = mon.rcWork.right - mon.rcWork.left;
+        ms.workHeight = mon.rcWork.bottom - mon.rcWork.top;
+        ms.primary = mon.isPrimary;
+        set->monitors.push_back(std::move(ms));
+    }
 
     for (const auto &mon : g_monitors)
     {
@@ -2196,13 +2483,7 @@ static std::shared_ptr<const ZoneSet> BuildZoneSet()
         {
             const ZoneConfig *zc = zoneCfg(z);
             int v = (zc && zc->tuning.size > 0) ? zc->tuning.size : fallback;
-            if (v < 1)
-                v = 1;
-            if (v > span / 2)
-                v = span / 2;
-            if (v < 1)
-                v = 1;
-            return v;
+            return ClampZoneSize(v, span);
         };
 
         int csTL = sizeOf(ZONE_TOP_LEFT, csCfg);
@@ -2216,10 +2497,27 @@ static std::shared_ptr<const ZoneSet> BuildZoneSet()
             int cap = a < b ? a : b;
             return v > cap ? cap : v;
         };
-        int esTop = edgeThickness(ZONE_EDGE_TOP, csTL, csTR);
-        int esBot = edgeThickness(ZONE_EDGE_BOTTOM, csBL, csBR);
-        int esLeft = edgeThickness(ZONE_EDGE_LEFT, csTL, csBL);
-        int esRight = edgeThickness(ZONE_EDGE_RIGHT, csTR, csBR);
+        // An edge is one strip however many segments it carries, so its
+        // thickness comes from the first segment that asks for one.
+        auto edgeThickness3 = [&](Zone a, Zone b, Zone c, int lim1,
+                                  int lim2) -> int
+        {
+            for (Zone z : {a, b, c})
+            {
+                const ZoneConfig *zc = zoneCfg(z);
+                if (zc && zc->tuning.size > 0)
+                    return edgeThickness(z, lim1, lim2);
+            }
+            return edgeThickness(a, lim1, lim2);
+        };
+        int esTop = edgeThickness3(ZONE_TOP_START, ZONE_TOP_MIDDLE,
+                                   ZONE_TOP_END, csTL, csTR);
+        int esBot = edgeThickness3(ZONE_BOTTOM_START, ZONE_BOTTOM_MIDDLE,
+                                   ZONE_BOTTOM_END, csBL, csBR);
+        int esLeft = edgeThickness3(ZONE_LEFT_START, ZONE_LEFT_MIDDLE,
+                                    ZONE_LEFT_END, csTL, csBL);
+        int esRight = edgeThickness3(ZONE_RIGHT_START, ZONE_RIGHT_MIDDLE,
+                                     ZONE_RIGHT_END, csTR, csBR);
 
         // An edge with a centre zone becomes two rectangles, but it is still one
         // edge: walking into the left half and then the right must give A then
@@ -2230,7 +2528,12 @@ static std::shared_ptr<const ZoneSet> BuildZoneSet()
         // two displays still alternate independently.
         std::function<void()> altExec[ZONE_COUNT];
 
-        auto add = [&](Zone z, RECT rect)
+        // spanned says how many of an edge's three segments this zone covers,
+        // so the label can say so. The log is what users are asked to paste
+        // when a zone misbehaves, and a merged edge reporting itself as
+        // "Top edge, left" while actually spanning the whole edge sent more
+        // than one report down the wrong path.
+        auto add = [&](Zone z, RECT rect, int spanned = 1)
         {
             const ZoneConfig *zc = ResolveZone(mon, z);
             if (!zc)
@@ -2243,6 +2546,15 @@ static std::shared_ptr<const ZoneSet> BuildZoneSet()
             if (zc->action == CornerAction::AlternateKeypress ||
                 zc->action == CornerAction::AlternateCommand)
             {
+                // zc->executor is deliberately not used for these two: every
+                // MakeExecutor call builds a fresh flip flag, so reusing the
+                // stored one would restart the alternation on each rebuild.
+                // Keyed per zone, which is what the readme promises - each zone
+                // alternates independently. Identical neighbouring segments
+                // have already coalesced into one zone before they reach here,
+                // so a merged edge alternates as a unit for free. The stored
+                // executor still earns its keep as the dashboard's
+                // "do the arguments parse?" test.
                 if (!altExec[z])
                     altExec[z] = MakeExecutor(zc->action, zc->args);
                 hz.exec = altExec[z];
@@ -2262,7 +2574,29 @@ static std::shared_ptr<const ZoneSet> BuildZoneSet()
             hz.modifier =
                 tn.modifier >= 0 ? tn.modifier : g_settings.requireModifier;
 
-            hz.label = mon.id + L" " + ZoneToString(z) + L" -> " +
+            hz.action = zc->action;
+            hz.args = zc->args;
+            hz.releaseAction = zc->releaseAction;
+            hz.releaseArgs = zc->releaseArgs;
+            // "The same action again" means exactly that: the same executor,
+            // not another one built from the same settings. It matters for the
+            // Alternate actions, whose executor carries a flip flag - a second
+            // copy has its own, so the release would run its own sequence
+            // instead of continuing the entry's. The stored release executor is
+            // also built once per configuration rather than per monitor, so on
+            // two displays the entry flags advanced independently while the
+            // release flag advanced once per trigger anywhere, and the pair
+            // drifted apart after the first trigger on the second display.
+            //
+            // For every non-alternating action the two are equivalent, so this
+            // changes nothing for Show Desktop, Mute or Keep awake.
+            hz.releaseExec = zc->releaseAction == CornerAction::SameAsEntry
+                                 ? hz.exec
+                                 : zc->releaseExecutor;
+            const wchar_t *span = spanned >= 3   ? L" (whole edge)"
+                                 : spanned == 2 ? L" (two segments)"
+                                                : L"";
+            hz.label = mon.id + L" " + ZoneToString(z) + span + L" -> " +
                        ActionToString(zc->action);
             set->zones.push_back(std::move(hz));
         };
@@ -2273,50 +2607,143 @@ static std::shared_ptr<const ZoneSet> BuildZoneSet()
         add(ZONE_BOTTOM_RIGHT,
             {r.right - csBR, r.bottom - csBR, r.right, r.bottom});
 
-        // Edges run between the two corners they touch, split around a centre
-        // zone when one is configured.
-        auto addEdge = [&](Zone edge, Zone centre, bool horizontal, LONG lo,
-                           LONG hi, LONG nearSide, LONG farSide)
+        // Edges run between the two corners they touch, divided into three
+        // independently configurable segments.
+        auto addEdge = [&](Zone zStart, Zone zMiddle, Zone zEnd,
+                           bool horizontal, LONG lo, LONG hi, LONG nearSide,
+                           LONG farSide)
         {
+            LONG sp = hi - lo;
+            if (sp <= 0)
+                return;
+
             auto rectFor = [&](LONG a, LONG b) -> RECT
             {
                 return horizontal ? RECT{a, nearSide, b, farSide}
                                   : RECT{nearSide, a, farSide, b};
             };
 
-            const ZoneConfig *centreCfg = ResolveZone(mon, centre);
-            LONG sp = hi - lo;
             LONG width = sp * centrePct / 100;
-
-            if (!centreCfg || width < 1 || width >= sp || sp <= 0)
-            {
-                if (sp > 0)
-                    add(edge, rectFor(lo, hi));
-                return;
-            }
-
-            LONG mid = lo + sp / 2;
-            LONG cLo = mid - width / 2;
+            if (width < 1)
+                width = 1;
+            if (width > sp)
+                width = sp;
+            LONG cLo = lo + sp / 2 - width / 2;
             LONG cHi = cLo + width;
+            if (cLo < lo)
+                cLo = lo;
+            if (cHi > hi)
+                cHi = hi;
 
-            if (cLo > lo)
-                add(edge, rectFor(lo, cLo));
-            add(centre, rectFor(cLo, cHi));
-            if (cHi < hi)
-                add(edge, rectFor(cHi, hi));
+            const Zone seg[3] = {zStart, zMiddle, zEnd};
+            const LONG bound[4] = {lo, cLo, cHi, hi};
+
+            // Coalesce neighbouring segments that resolve to the same thing.
+            // Setting all three alike therefore produces one edge-wide zone
+            // rather than three, which matters for more than tidiness: three
+            // adjacent zones sharing an action would each re-arm - and re-fire
+            // - as the pointer crossed a seam.
+            int i = 0;
+            while (i < 3)
+            {
+                const ZoneConfig *zc = ResolveZone(mon, seg[i]);
+                int j = i + 1;
+                while (j < 3 && SameZoneConfig(zc, ResolveZone(mon, seg[j])))
+                    j++;
+                if (zc && bound[j] > bound[i])
+                    add(seg[i], rectFor(bound[i], bound[j]), j - i);
+                i = j;
+            }
         };
 
-        addEdge(ZONE_EDGE_TOP, ZONE_CENTER_TOP, true, r.left + csTL,
-                r.right - csTR, r.top, r.top + esTop);
-        addEdge(ZONE_EDGE_BOTTOM, ZONE_CENTER_BOTTOM, true, r.left + csBL,
-                r.right - csBR, r.bottom - esBot, r.bottom);
-        addEdge(ZONE_EDGE_LEFT, ZONE_CENTER_LEFT, false, r.top + csTL,
-                r.bottom - csBL, r.left, r.left + esLeft);
-        addEdge(ZONE_EDGE_RIGHT, ZONE_CENTER_RIGHT, false, r.top + csTR,
-                r.bottom - csBR, r.right - esRight, r.right);
+        addEdge(ZONE_TOP_START, ZONE_TOP_MIDDLE, ZONE_TOP_END, true,
+                r.left + csTL, r.right - csTR, r.top, r.top + esTop);
+        addEdge(ZONE_BOTTOM_START, ZONE_BOTTOM_MIDDLE, ZONE_BOTTOM_END, true,
+                r.left + csBL, r.right - csBR, r.bottom - esBot, r.bottom);
+        addEdge(ZONE_LEFT_START, ZONE_LEFT_MIDDLE, ZONE_LEFT_END, false,
+                r.top + csTL, r.bottom - csBL, r.left, r.left + esLeft);
+        addEdge(ZONE_RIGHT_START, ZONE_RIGHT_MIDDLE, ZONE_RIGHT_END, false,
+                r.top + csTR, r.bottom - csBR, r.right - esRight, r.right);
     }
     LeaveCriticalSection(&g_settingsLock);
 
+    // Deliberately not logged here. An SPI_SETWORKAREA burst calls this once
+    // per broadcast and the result is usually identical, so logging at build
+    // time repeated the whole zone list several times for a change nobody made.
+    // RebuildZones logs past its no-op check instead.
+    set->cornerSizeCfg = csCfg;
+    set->edgeSizeCfg = esCfg;
+    return set;
+}
+
+// Defined with the detection loop, which owns the state it touches; a rebuild
+// has to let go of a held zone before it forgets which one that was.
+static void ReleaseHeldZone(const std::shared_ptr<const ZoneSet> &zones);
+
+// True when two zone sets would behave identically. Only what the detection
+// loop and the actions actually read - the executors are rebuilt every time
+// and never compare equal, so comparing them would make this always false.
+static bool SameZoneSet(const ZoneSet *a, const ZoneSet *b)
+{
+    if (!a || !b || a->zones.size() != b->zones.size() ||
+        a->monitors.size() != b->monitors.size() ||
+        a->disableDuringDrag != b->disableDuringDrag)
+        return false;
+
+    // The dashboard reads the monitor summaries, so a display renamed or
+    // resized has to publish even when no zone rectangle moved.
+    for (size_t i = 0; i < a->monitors.size(); i++)
+    {
+        const auto &x = a->monitors[i], &y = b->monitors[i];
+        if (x.id != y.id || x.width != y.width || x.height != y.height ||
+            x.primary != y.primary)
+            return false;
+    }
+
+    for (size_t i = 0; i < a->zones.size(); i++)
+    {
+        const HitZone &x = a->zones[i], &y = b->zones[i];
+        if (memcmp(&x.rect, &y.rect, sizeof(RECT)) != 0 || x.zone != y.zone ||
+            x.monitor != y.monitor || x.action != y.action ||
+            x.args != y.args || x.releaseAction != y.releaseAction ||
+            x.releaseArgs != y.releaseArgs ||
+            x.delay != y.delay || x.settle != y.settle ||
+            x.knock != y.knock || x.cooldown != y.cooldown ||
+            x.modifier != y.modifier || x.label != y.label)
+            return false;
+    }
+    return true;
+}
+
+// Detection thread only.
+static void RebuildZones()
+{
+    RefreshMonitors();
+    auto set = BuildZoneSet();
+
+    // Recorded before the early return below. TopologyChanged compares against
+    // these, so leaving them stale after a no-op rebuild would make it report a
+    // change on every poll and rebuild forever.
+    g_topoCount = GetSystemMetrics(SM_CMONITORS);
+    g_topoVirtual = {GetSystemMetrics(SM_XVIRTUALSCREEN),
+                     GetSystemMetrics(SM_YVIRTUALSCREEN),
+                     GetSystemMetrics(SM_CXVIRTUALSCREEN),
+                     GetSystemMetrics(SM_CYVIRTUALSCREEN)};
+    SystemParametersInfoW(SPI_GETWORKAREA, 0, &g_topoWorkArea, 0);
+
+    // Appbar registrations and taskbar changes broadcast SPI_SETWORKAREA
+    // several times in a row, and a rebuild resets every cooldown and
+    // alternation position and re-logs the whole zone list. When the result is
+    // identical there is nothing to publish, so skip the swap and the reset.
+    std::shared_ptr<const ZoneSet> current;
+    EnterCriticalSection(&g_zonesLock);
+    current = g_zones;
+    LeaveCriticalSection(&g_zonesLock);
+    if (SameZoneSet(current.get(), set.get()))
+        return;
+
+    // Past the no-op check, so this describes a change that actually happened.
+    LogMonitors();
     if (set->zones.empty())
     {
         Wh_Log(L"No zones are active - every zone is set to \"Nothing\", or "
@@ -2325,19 +2752,14 @@ static std::shared_ptr<const ZoneSet> BuildZoneSet()
     else
     {
         Wh_Log(L"Active zones (%d)   corner %dpx, edge %dpx:",
-               (int)set->zones.size(), csCfg, esCfg);
+               (int)set->zones.size(), set->cornerSizeCfg, set->edgeSizeCfg);
         for (const auto &z : set->zones)
             Wh_Log(L"   %s", z.label.c_str());
     }
 
-    return set;
-}
-
-// Detection thread only.
-static void RebuildZones()
-{
-    RefreshMonitors();
-    auto set = BuildZoneSet();
+    // The state reset below forgets which zone was held, so let go first while
+    // the old set is still the one those indices refer to.
+    ReleaseHeldZone(current);
 
     EnterCriticalSection(&g_zonesLock);
     g_zones = set;
@@ -2349,13 +2771,37 @@ static void RebuildZones()
     g_lastFireTick.assign(set->zones.size(), 0);
     g_lastExitTick.assign(set->zones.size(), 0);
     g_knockSatisfied = true;
+    // ReleaseHeldZone above already let go against the old set; this only
+    // makes sure nothing carries into the new one.
+    g_holdEngaged = false;
 
-    g_topoCount = GetSystemMetrics(SM_CMONITORS);
-    g_topoVirtual = {GetSystemMetrics(SM_XVIRTUALSCREEN),
-                     GetSystemMetrics(SM_YVIRTUALSCREEN),
-                     GetSystemMetrics(SM_CXVIRTUALSCREEN),
-                     GetSystemMetrics(SM_CYVIRTUALSCREEN)};
-    SystemParametersInfoW(SPI_GETWORKAREA, 0, &g_topoWorkArea, 0);
+    // A rebuild is not a gesture. With the state above cleared, a pointer that
+    // has not moved looks to the next tick like a fresh entry - and with every
+    // cooldown zeroed too, nothing stops it firing once the dwell elapses. That
+    // made the action run on mod enable, on any settings change, and on every
+    // WM_DISPLAYCHANGE or work-area broadcast, which includes a monitor waking
+    // up. Parking the pointer in a corner after using it is the normal way to
+    // use hot corners, so this was easy to hit, and a corner bound to Lock or
+    // Sleep would do that thing unprompted.
+    //
+    // Adopting the zone the cursor is already in, with the visit already spent,
+    // means only leaving and coming back can arm it.
+    POINT pt;
+    if (GetCursorPos(&pt))
+    {
+        for (size_t i = 0; i < set->zones.size(); i++)
+        {
+            const RECT &r = set->zones[i].rect;
+            if (pt.x >= r.left && pt.x < r.right && pt.y >= r.top &&
+                pt.y < r.bottom)
+            {
+                g_activeZone = (int)i;
+                g_enterTick = GetTickCount64();
+                g_firedThisEntry = true;
+                break;
+            }
+        }
+    }
 }
 
 // WM_DISPLAYCHANGE is not delivered for every layout change that matters —
@@ -2379,13 +2825,45 @@ static bool TopologyChanged()
 // Action Worker Thread
 // =====================================================================
 
-static void EnqueueAction(const HitZone &hz)
+// Returns whether the job was actually taken. The caller needs to know: a hold
+// whose entry was dropped must not go on to queue a release, or the zone
+// undoes something that never happened.
+static bool EnqueueAction(const HitZone &hz)
 {
     EnterCriticalSection(&g_queueLock);
-    if (g_queue.size() < kMaxQueue)
+    // A release is never dropped. The cap is there to bound a runaway burst of
+    // new work, but discarding the half that undoes something already done is
+    // how a peeked desktop gets stuck with no way back. It cannot grow without
+    // bound either: a release is only queued for an entry that was accepted,
+    // so there is at most one outstanding per hold zone.
+    const bool queued = (g_queue.size() < kMaxQueue) || hz.isRelease;
+    if (queued)
         g_queue.push_back(hz);
     LeaveCriticalSection(&g_queueLock);
     SetEvent(g_hWorkEvent);
+    if (!queued)
+    {
+        // The caller has already spent the visit and stamped both cooldowns by
+        // the time it learns this, so the zone stays dead until the pointer
+        // leaves and comes back. Users are asked to paste this log when a zone
+        // misbehaves, and silence here is exactly the case it cannot answer.
+        Wh_Log(L"DROPPED (action queue full): %s", hz.label.c_str());
+    }
+    return queued;
+}
+
+// A hold zone's second half, queued when the pointer leaves. The copy carries
+// the release executor in exec, so the worker needs no special case for it.
+static void EnqueueRelease(const HitZone &hz)
+{
+    if (!hz.releaseExec)
+        return;
+    HitZone rel = hz;
+    rel.exec = hz.releaseExec;
+    rel.label = hz.label + L"  (released)";
+    rel.engagesHold = false;
+    rel.isRelease = true;
+    EnqueueAction(rel);
 }
 
 static DWORD WINAPI ActionWorkerThread(LPVOID)
@@ -2400,13 +2878,12 @@ static DWORD WINAPI ActionWorkerThread(LPVOID)
     for (;;)
     {
         DWORD r = WaitForMultipleObjects(2, waits, FALSE, INFINITE);
-        if (r == WAIT_OBJECT_0 || r == WAIT_FAILED)
-        {
-            // Release any keep-awake request this thread was holding, so
-            // unloading the mod never leaves the machine unable to sleep.
-            SetThreadExecutionState(ES_CONTINUOUS);
-            break;
-        }
+
+        // On the way out, still drain the queue - but run only the release
+        // half of a hold. Uninit queues that release deliberately, and dropping
+        // it is what strands a peeked desktop; anything else is new work nobody
+        // is waiting for.
+        const bool stopping = (r == WAIT_OBJECT_0 || r == WAIT_FAILED);
 
         for (;;)
         {
@@ -2422,6 +2899,8 @@ static DWORD WINAPI ActionWorkerThread(LPVOID)
             LeaveCriticalSection(&g_queueLock);
             if (!have)
                 break;
+            if (stopping && !job.isRelease)
+                continue;
 
             // The gates live here, not on the detection thread, so a slow
             // SHQueryUserNotificationState or OpenProcess can never delay the
@@ -2438,23 +2917,48 @@ static DWORD WINAPI ActionWorkerThread(LPVOID)
             // fullscreen game has focus re-queues the job every cooldown.
             // Report the first skip of a run, then stay quiet until something
             // actually fires. Only this thread touches the flag.
+            // Whether the entry half of a hold actually ran. Only this thread
+            // touches it, and the queue is FIFO, so the entry job is always
+            // seen before the release it pairs with - no synchronisation and no
+            // race with the detection thread's own view of the hold.
+            static bool holdActive = false;
+
             static bool skipLogged = false;
-            HMONITOR fsMon = checkFullscreen ? FullScreenMonitor() : nullptr;
-            if (fsMon && (fsMon == kAllMonitors || fsMon == job.monitor))
+            if (job.isRelease)
             {
-                if (!skipLogged)
-                    Wh_Log(L"SKIP (fullscreen): %s", job.label.c_str());
-                skipLogged = true;
-                continue;
+                // Deliberately not gated. The gates decide whether to *start*
+                // something; refusing to undo something already done would
+                // leave the desktop peeked with no way back - a fullscreen app
+                // appearing while the pointer rests in the corner is exactly
+                // when that would happen.
+                if (!holdActive)
+                {
+                    // The entry was suppressed or never made it onto the queue,
+                    // so there is nothing to undo. Releasing anyway is how a
+                    // hold zone ends up *hiding* your windows on the way out.
+                    Wh_Log(L"SKIP (nothing engaged): %s", job.label.c_str());
+                    continue;
+                }
             }
-            if (IsForegroundAppExcluded(excluded))
+            else
             {
-                if (!skipLogged)
-                    Wh_Log(L"SKIP (excluded app): %s", job.label.c_str());
-                skipLogged = true;
-                continue;
+                HMONITOR fsMon = checkFullscreen ? FullScreenMonitor() : nullptr;
+                if (fsMon && (fsMon == kAllMonitors || fsMon == job.monitor))
+                {
+                    if (!skipLogged)
+                        Wh_Log(L"SKIP (fullscreen): %s", job.label.c_str());
+                    skipLogged = true;
+                    continue;
+                }
+                if (IsForegroundAppExcluded(excluded))
+                {
+                    if (!skipLogged)
+                        Wh_Log(L"SKIP (excluded app): %s", job.label.c_str());
+                    skipLogged = true;
+                    continue;
+                }
+                skipLogged = false;
             }
-            skipLogged = false;
 
             {
                 WCHAR fgClass[64] = L"?";
@@ -2467,8 +2971,42 @@ static DWORD WINAPI ActionWorkerThread(LPVOID)
             // Calling an empty std::function throws, and an exception escaping
             // this thread would kill it silently — every zone would stop
             // working with no indication why.
+            // The Start-menu mask in SendKeys only covers actions that go
+            // through it. Lock, Sleep, Task Manager, Custom command and the
+            // Keep awake pair never do, so on a Win-guarded zone the user's
+            // Win key-down stayed unmatched and letting go opened Start - the
+            // same behaviour SendKeys exists to suppress, on the other half of
+            // the action list. One tap here makes it uniform. Ctrl alone does
+            // nothing, and a second tap for a key-based action is harmless.
+            if (job.modifier == kModifierWin &&
+                ((GetAsyncKeyState(VK_LWIN) & 0x8000) ||
+                 (GetAsyncKeyState(VK_RWIN) & 0x8000)))
+            {
+                INPUT tap[2] = {};
+                tap[0].type = INPUT_KEYBOARD;
+                tap[0].ki.wVk = VK_CONTROL;
+                tap[1] = tap[0];
+                tap[1].ki.dwFlags = KEYEVENTF_KEYUP;
+                SendInput(2, tap, sizeof(INPUT));
+            }
+
             if (job.exec)
                 job.exec();
+
+            // Recorded only now, past the gates and the execution, so a hold is
+            // owed a release exactly when its entry half really happened.
+            if (job.isRelease)
+                holdActive = false;
+            else if (job.engagesHold)
+                holdActive = true;
+        }
+
+        if (stopping)
+        {
+            // Release any keep-awake request this thread was holding, so
+            // unloading the mod never leaves the machine unable to sleep.
+            SetThreadExecutionState(ES_CONTINUOUS);
+            break;
         }
     }
     CoUninitialize();
@@ -2484,11 +3022,11 @@ static bool RequiredModifierHeld(int which)
 {
     switch (which)
     {
-    case 1: return (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
-    case 2: return (GetAsyncKeyState(VK_MENU) & 0x8000) != 0;
-    case 3: return (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
-    case 4: return (GetAsyncKeyState(VK_LWIN) & 0x8000) != 0 ||
-                   (GetAsyncKeyState(VK_RWIN) & 0x8000) != 0;
+    case kModifierCtrl:  return (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
+    case kModifierAlt:   return (GetAsyncKeyState(VK_MENU) & 0x8000) != 0;
+    case kModifierShift: return (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+    case kModifierWin:   return (GetAsyncKeyState(VK_LWIN) & 0x8000) != 0 ||
+                                (GetAsyncKeyState(VK_RWIN) & 0x8000) != 0;
     default: return true;  // no modifier required
     }
 }
@@ -2502,23 +3040,59 @@ static bool AnyMouseButtonDown()
            (GetAsyncKeyState(VK_XBUTTON2) & 0x8000);
 }
 
+// Anything that stops detection has to let go of a held zone first, or the
+// hold's second half never runs and whatever it engaged stays engaged - a
+// peeked desktop that will not come back is a far worse failure than a missed
+// trigger. Safe to call when nothing is held.
+static void ReleaseHeldZone(const std::shared_ptr<const ZoneSet> &zones)
+{
+    if (!g_holdEngaged)
+        return;
+    g_holdEngaged = false;
+    if (zones && g_activeZone >= 0 && g_activeZone < (int)zones->zones.size())
+        EnqueueRelease(zones->zones[g_activeZone]);
+    // g_activeZone is deliberately left alone, and the visit stays spent.
+    // Clearing it would make the next tick read a pointer that has not moved
+    // as a fresh entry, so re-enabling the mod while it rests in a corner
+    // would fire that corner - the same trap a rebuild used to fall into.
+    g_firedThisEntry = true;
+}
+
 // Returns how long the caller should wait before ticking again.
 static DWORD DetectTick()
 {
-    if (!g_trayEnabled.load() || GetTickCount64() < g_suspendUntil.load())
-        return kIdleTickMs;
-
     std::shared_ptr<const ZoneSet> zones;
     EnterCriticalSection(&g_zonesLock);
     zones = g_zones;
     LeaveCriticalSection(&g_zonesLock);
 
-    if (!zones || zones->zones.empty())
+    if (!g_trayEnabled.load() || GetTickCount64() < g_suspendUntil.load())
+    {
+        ReleaseHeldZone(zones);
         return kIdleTickMs;
+    }
 
+    if (!zones || zones->zones.empty())
+    {
+        ReleaseHeldZone(zones);
+        return kIdleTickMs;
+    }
+
+    // GetCursorPos fails for a process on the default desktop once the input
+    // desktop is the secure one, so a locked machine used to spin this thread
+    // at the full rate all night with no possible way for a zone to be hit.
+    // A single failure is still treated as transient - it is usually a desktop
+    // switch in progress - but a run of them backs off to the idle rate, and
+    // the first success restores it.
+    static int consecutiveFailures = 0;
     POINT pt;
     if (!GetCursorPos(&pt))
-        return kTickMs;   // transient, and zones are armed - do not slow down
+    {
+        if (consecutiveFailures < 10)
+            consecutiveFailures++;
+        return consecutiveFailures >= 10 ? kIdleTickMs : kTickMs;
+    }
+    consecutiveFailures = 0;
 
     int idx = -1;
     for (size_t i = 0; i < zones->zones.size(); i++)
@@ -2552,6 +3126,9 @@ static DWORD DetectTick()
         // be recognised as the second half of a knock.
         if (g_activeZone >= 0 && g_activeZone < (int)g_lastExitTick.size())
             g_lastExitTick[g_activeZone] = now;
+
+        // A hold zone's second half, for the zone being left.
+        ReleaseHeldZone(zones);
 
         g_activeZone = idx;
         g_enterTick = now;
@@ -2615,12 +3192,31 @@ static DWORD DetectTick()
         (now - g_lastAnyFireTick) < kMinFireIntervalMs)
         return next;
 
+    // The cooldowns are stamped here, before the fullscreen and excluded-app
+    // gates run on the worker, so a suppressed trigger still consumes them.
+    // That is deliberate: those gates call SHQueryUserNotificationState and
+    // OpenProcess, and putting either on the 16 ms sampling path to save a
+    // cooldown the user cannot perceive would be the wrong trade. Rolling the
+    // stamps back from the worker is not an option either - this vector
+    // belongs to the detection thread.
     g_firedThisEntry = true;
     g_lastAnyFireTick = now;
     if (idx < (int)g_lastFireTick.size())
         g_lastFireTick[idx] = now;
 
-    EnqueueAction(zones->zones[idx]);
+    // Only a zone that actually engaged owes a release, so this is set here
+    // rather than at entry - a pass-through that never fired leaves nothing
+    // behind to undo. This tracks that a release has been *queued*; whether it
+    // runs is the worker's call, since the gates it would be suppressed by live
+    // there and this thread must not wait on them.
+    HitZone job = zones->zones[idx];
+    job.engagesHold = (bool)job.releaseExec;
+
+    // Only owe a release if the entry was actually accepted. A full queue drops
+    // the entry, and arming the release anyway would leave the zone undoing
+    // something that never ran. The worker gates this a second time, from the
+    // far side of the fullscreen and excluded-app checks.
+    g_holdEngaged = EnqueueAction(job) && job.engagesHold;
     return next;
 }
 
@@ -2631,13 +3227,43 @@ static DWORD DetectTick()
 static LRESULT CALLBACK DetectWndProc(HWND hWnd, UINT uMsg, WPARAM wParam,
                                       LPARAM lParam)
 {
-    if (uMsg == WM_DISPLAYCHANGE || uMsg == WM_APP_REBUILD)
+    if (uMsg == WM_APP_REBUILD)
     {
-        if (uMsg == WM_DISPLAYCHANGE)
-            Wh_Log(L"WM_DISPLAYCHANGE — rebuilding zones");
-        else
-            Wh_Log(L"Settings changed — rebuilding zones");
         RebuildZones();
+        return 0;
+    }
+    // Unload path. Every other way of stopping detection releases a held zone
+    // on the way out; without this one, unloading the mod with the pointer
+    // parked in a Show Desktop hold zone left every window minimised and
+    // nothing running that could put them back.
+    if (uMsg == WM_APP_RELEASE_HOLD)
+    {
+        std::shared_ptr<const ZoneSet> zones;
+        EnterCriticalSection(&g_zonesLock);
+        zones = g_zones;
+        LeaveCriticalSection(&g_zonesLock);
+        ReleaseHeldZone(zones);
+        return 0;
+    }
+    // Both of these arrive as a SendMessage broadcast, so rebuilding inline
+    // blocks the sender for a QueryDisplayConfig, an EnumDisplayMonitors and
+    // the whole monitor log dump. SPI_SETWORKAREA also arrives several times
+    // in a row when a taskbar moves, and every rebuild resets each zone's
+    // cooldown and alternation position. Posting returns at once and coalesces
+    // naturally, because the loop drains its queue before the next tick.
+    //
+    // The work-area case is here at all because the polled topology check
+    // reads SPI_GETWORKAREA, which only ever reports the primary display - a
+    // taskbar moved on a secondary one was invisible to it.
+    if (uMsg == WM_DISPLAYCHANGE ||
+        (uMsg == WM_SETTINGCHANGE && wParam == SPI_SETWORKAREA))
+    {
+        // Wh_Log concatenates its first argument onto a string literal, so it
+        // has to be one - a ternary here is a syntax error in a real build.
+        Wh_Log(L"%s — queueing a zone rebuild",
+               uMsg == WM_DISPLAYCHANGE ? L"WM_DISPLAYCHANGE"
+                                        : L"Work area changed");
+        PostMessage(hWnd, WM_APP_REBUILD, 0, 0);
         return 0;
     }
     return DefWindowProc(hWnd, uMsg, wParam, lParam);
@@ -2662,7 +3288,7 @@ static DWORD WINAPI DetectThread(LPVOID)
     g_hDetectWnd = CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, kClass,
                                   nullptr, WS_POPUP, 0, 0, 0, 0, nullptr,
                                   nullptr, hInst, nullptr);
-    if (!g_hDetectWnd)
+    if (!g_hDetectWnd.load())
     {
         Wh_Log(L"Failed to create detection window");
         UnregisterClass(kClass, hInst);
@@ -2704,7 +3330,7 @@ static DWORD WINAPI DetectThread(LPVOID)
     }
 
 done:
-    DestroyWindow(g_hDetectWnd);
+    DestroyWindow(g_hDetectWnd.load());
     g_hDetectWnd = nullptr;
     UnregisterClass(kClass, hInst);
     Wh_Log(L"Detection thread exiting");
@@ -2720,16 +3346,30 @@ done:
 // closes, so hosting it on the detection thread would freeze every zone for
 // as long as the menu is open.
 //
-// The icon is also the only way in: this mod has no Windhawk settings page, so
-// left-click toggles, right-click is the quick menu, and the menu's first item
-// opens the dashboard where everything else lives.
+// Left-click toggles the hot corners, right-click is the quick menu, and the
+// menu's first item opens the dashboard. Everything configurable lives on the
+// Windhawk settings page; the icon carries only runtime state.
 
 static HANDLE g_hTrayThread = nullptr;
 static DWORD g_dwTrayThreadId = 0;
-static HWND g_hTrayWnd = nullptr;
+// Written by the tray thread, read from Windhawk's thread via
+// WhTool_ModSettingsChanged -> UpdateTrayIcon.
+static std::atomic<HWND> g_hTrayWnd{nullptr};
 static UINT g_taskbarCreatedMsg = 0;
 static constexpr UINT WM_APP_TRAY = WM_APP + 10;
+
+// Posted so the icon is always rebuilt on the tray thread. MakeTrayIcon reads
+// GetSystemMetrics(SM_CXSMICON), which is DPI-context sensitive, and
+// WhTool_ModSettingsChanged runs on Windhawk's thread in whatever context that
+// happens to be - which is what pinning the tray thread was for. It also keeps
+// Shell_NotifyIcon, which round-trips to the shell, off that thread.
+static constexpr UINT WM_APP_TRAY_REFRESH = WM_APP + 11;
 static constexpr UINT_PTR kTrayIconId = 1;
+// Fires once when a suspension expires, purely so the icon stops saying
+// "paused". Detection needs no timer - it re-reads the deadline every tick.
+static constexpr UINT_PTR kSuspendTimerId = 2;
+
+static void CancelSuspendTimer();
 
 // A stable GUID gives the icon an identity of its own. Without one it is keyed
 // on the host executable, which for a Windhawk tool mod is windhawk.exe and is
@@ -2742,7 +3382,9 @@ static const GUID kTrayIconGuid = {
 // Set once NIM_ADD succeeds. NIF_GUID also validates the registering
 // executable's path, so if it is ever rejected we fall back to plain uID
 // identity rather than losing the icon entirely.
-static bool g_trayUseGuid = true;
+// Written by UpdateTrayIcon, which runs on the tray thread, on Windhawk's
+// thread via WhTool_ModSettingsChanged, and at startup.
+static std::atomic<bool> g_trayUseGuid{true};
 
 // NOTIFYICON_VERSION_4 changes what the shell sends:
 //   left-click  -> NIN_SELECT      (rather than WM_LBUTTONUP)
@@ -2771,8 +3413,6 @@ enum TrayCommand
     IDM_SUSPEND_30,
     IDM_SUSPEND_60,
     IDM_RESUME,
-    IDM_FULLSCREEN,
-    IDM_DRAG,
     IDM_CLEAR_OVERRIDES,
     IDM_ABOUT,
 };
@@ -2780,14 +3420,16 @@ enum TrayCommand
 // Defined further down with the dashboard; the tray menu needs it earlier.
 static void OpenDashboard();
 
-// -1 means "no override, use the Windhawk setting"
+// Whether the hot corners are on. Runtime state rather than a setting - it has
+// no equivalent on the settings page, which is why the tray still owns it.
+// -1 means "never written", which reads as on.
 static const wchar_t *kOvrEnabled = L"ovr_enabled";
-static const wchar_t *kOvrFullscreen = L"ovr_fullscreen";
-static const wchar_t *kOvrDrag = L"ovr_drag";
 
-static HICON MakeTrayIcon(bool enabled)
+// A screen outline with the top-left corner lit and the other three marked,
+// which is the mod in one glyph. Drawn rather than shipped as a resource:
+// Windhawk mods are a single source file, so there is nowhere to put an .ico.
+static HICON MakeHotCornerIcon(int sz, bool enabled)
 {
-    int sz = GetSystemMetrics(SM_CXSMICON);
     if (sz < 8)
         sz = 16;
 
@@ -2811,24 +3453,47 @@ static HICON MakeTrayIcon(bool enabled)
         return nullptr;
     }
 
-    // A screen outline with one corner lit. Mid-tone colours so it stays
-    // legible on both a light and a dark taskbar.
+    // Mid-tone colours so it stays legible on both a light and a dark taskbar.
     DWORD *px = static_cast<DWORD *>(bits);
-    const DWORD frame = enabled ? 0xFFB0B0B0 : 0xFF707070;
-    const DWORD accent = enabled ? 0xFF4CC2FF : 0xFF707070;
-    int block = sz / 3;
-    if (block < 3)
-        block = 3;
+    const DWORD frame = enabled ? 0xFFB4B4B4 : 0xFF6E6E6E;
+    const DWORD accent = enabled ? 0xFF4CC2FF : 0xFF6E6E6E;
+    const DWORD dim = enabled ? 0xFF7A8A94 : 0xFF5A5A5A;
+
+    int bord = sz >= 32 ? 2 : 1;              // outline thickness
+    int arm = sz / 3;                         // length of a corner mark
+    if (arm < 3)
+        arm = 3;
+    int thick = sz >= 32 ? 3 : 2;             // thickness of a corner mark
 
     for (int y = 0; y < sz; y++)
     {
         for (int x = 0; x < sz; x++)
         {
-            DWORD c = 0;  // transparent
-            if (x == 0 || y == 0 || x == sz - 1 || y == sz - 1)
+            DWORD c = 0;   // transparent
+
+            bool onFrame = x < bord || y < bord || x >= sz - bord ||
+                           y >= sz - bord;
+            if (onFrame)
                 c = frame;
-            if (x < block && y < block)
+
+            // Three corners get an L-shaped bracket, so the glyph reads as
+            // "corners" rather than as a window with a coloured tab.
+            auto bracket = [&](bool right, bool bottom) -> bool
+            {
+                int dx = right ? sz - 1 - x : x;
+                int dy = bottom ? sz - 1 - y : y;
+                return (dx < arm && dy < thick) || (dy < arm && dx < thick);
+            };
+
+            if (bracket(true, false) || bracket(false, true) ||
+                bracket(true, true))
+                c = dim;
+
+            // The top-left one is filled solid: that is the corner the mod is
+            // named for, and a lit corner beats a fourth identical bracket.
+            if (x < arm && y < arm)
                 c = accent;
+
             px[y * sz + x] = c;
         }
     }
@@ -2850,10 +3515,15 @@ static HICON MakeTrayIcon(bool enabled)
     return hIcon;
 }
 
+static HICON MakeTrayIcon(bool enabled)
+{
+    return MakeHotCornerIcon(GetSystemMetrics(SM_CXSMICON), enabled);
+}
+
 static void FillTrayIconData(NOTIFYICONDATAW &nid)
 {
     nid.cbSize = sizeof(nid);
-    nid.hWnd = g_hTrayWnd;
+    nid.hWnd = g_hTrayWnd.load();
     nid.uID = (UINT)kTrayIconId;
     if (g_trayUseGuid)
     {
@@ -2864,7 +3534,7 @@ static void FillTrayIconData(NOTIFYICONDATAW &nid)
 
 static void UpdateTrayIcon(bool add)
 {
-    if (!g_hTrayWnd)
+    if (!g_hTrayWnd.load())
         return;
 
     bool active = g_trayEnabled && GetTickCount64() >= g_suspendUntil.load();
@@ -2911,174 +3581,201 @@ static void UpdateTrayIcon(bool add)
 }
 
 // =====================================================================
-// Dashboard persistence
+// Windhawk settings page
 // =====================================================================
 //
-// This is the whole of the mod's persistence. There is no Windhawk settings
-// page to fall back on, so what is written here is what the mod runs with, and
-// a key that has never been written falls back to the default ReloadConfig set.
+// The settings page is the configuration surface; the dashboard only shows
+// what it produced. A mod can read its settings but not write them, so a
+// second surface that also edits the configuration can only ever diverge from
+// this one - during development that showed up as an editor addressing stored
+// configurations by list position and overwriting the wrong display.
 //
-// One key per field rather than a packed string: wordy, but it survives partial
-// writes and is readable if anything ever needs debugging by hand.
+// Precedence, decided once per reload:
+//
+//   1. Displays configured on the settings page win outright.
+//   2. Otherwise, settings supply the globals and no zones are active.
+//
+// There used to be a step between the two for a zone layout saved before the
+// settings page existed. That migration path is gone and the
+// value store now holds nothing but the enable flag.
 
-static constexpr int kMaxGuiConfigs = 8;
-
-static std::wstring GetStrValue(const wchar_t *name)
+static int ParseZoneName(const std::wstring &s)
 {
-    WCHAR buf[512] = {};
-    if (Wh_GetStringValue(name, buf, ARRAYSIZE(buf)) == 0)
-        return L"";
-    return buf;
+    static const struct
+    {
+        const wchar_t *name;
+        Zone zone;
+    } kMap[] = {
+        {L"TOP_LEFT", ZONE_TOP_LEFT},
+        {L"TOP_RIGHT", ZONE_TOP_RIGHT},
+        {L"BOTTOM_LEFT", ZONE_BOTTOM_LEFT},
+        {L"BOTTOM_RIGHT", ZONE_BOTTOM_RIGHT},
+        {L"TOP_START", ZONE_TOP_START},
+        {L"TOP_MIDDLE", ZONE_TOP_MIDDLE},
+        {L"TOP_END", ZONE_TOP_END},
+        {L"BOTTOM_START", ZONE_BOTTOM_START},
+        {L"BOTTOM_MIDDLE", ZONE_BOTTOM_MIDDLE},
+        {L"BOTTOM_END", ZONE_BOTTOM_END},
+        {L"LEFT_START", ZONE_LEFT_START},
+        {L"LEFT_MIDDLE", ZONE_LEFT_MIDDLE},
+        {L"LEFT_END", ZONE_LEFT_END},
+        {L"RIGHT_START", ZONE_RIGHT_START},
+        {L"RIGHT_MIDDLE", ZONE_RIGHT_MIDDLE},
+        {L"RIGHT_END", ZONE_RIGHT_END},
+    };
+    for (const auto &m : kMap)
+        if (s == m.name)
+            return (int)m.zone;
+    return -1;
 }
 
-static std::wstring GuiKey(int cfg, int zone, const wchar_t *what)
+// Windhawk only accepts $options on a string setting, so the modifier arrives
+// by name. -1 is the "inherit" marker the zone tuning already uses; the global
+// has no INHERIT option, so its caller maps a negative result onto None.
+static int ParseModifierName(const std::wstring &s)
 {
-    wchar_t k[64];
-    if (zone < 0)
-        _snwprintf_s(k, _countof(k), _TRUNCATE, L"g%d.%s", cfg, what);
-    else
-        _snwprintf_s(k, _countof(k), _TRUNCATE, L"g%d.z%d.%s", cfg, zone, what);
-    return k;
+    if (s == L"NONE")
+        return kModifierNone;
+    if (s == L"CTRL")
+        return kModifierCtrl;
+    if (s == L"ALT")
+        return kModifierAlt;
+    if (s == L"SHIFT")
+        return kModifierShift;
+    if (s == L"WIN")
+        return kModifierWin;
+    return -1;   // INHERIT, empty, or anything unrecognised
 }
 
-// The saved zone layout, or an empty vector if there is not one yet. Returns it
-// rather than assigning g_settings.monitorConfigs: this reads several hundred
-// value-store keys and builds a std::function per zone, and holding
-// g_settingsLock across all of that would stall the detection thread, the
-// action worker and the tray menu.
-static std::vector<MonitorZoneConfig> ReadDashboardZones()
+// Windhawk has no array-length call, so both loops run until the first
+// entry whose required string comes back empty - the standard idiom, and
+// what makes an empty Display name terminate the list.
+static std::wstring GetSettingStr(const wchar_t *fmt, int a, int b = -1)
+{
+    PCWSTR raw = (b < 0) ? Wh_GetStringSetting(fmt, a)
+                         : Wh_GetStringSetting(fmt, a, b);
+    std::wstring out = raw;   // Wh_GetStringSetting returns L"", never NULL
+    Wh_FreeStringSetting(raw);
+    return out;
+}
+
+// For the settings that are not inside an array, where passing an index into a
+// format string with no %d in it just read like a bug.
+static std::wstring GetSettingStr(const wchar_t *name)
+{
+    PCWSTR raw = Wh_GetStringSetting(name);
+    std::wstring out = raw;   // Wh_GetStringSetting returns L"", never NULL
+    Wh_FreeStringSetting(raw);
+    return out;
+}
+
+static std::vector<MonitorZoneConfig> ReadSettingsZones()
 {
     std::vector<MonitorZoneConfig> configs;
-    if (Wh_GetIntValue(L"gui_active", 0) == 0)
-        return configs;
 
-    for (int i = 0; i < kMaxGuiConfigs; i++)
+    // Scanned to a fixed bound rather than stopping at the first blank, so
+    // clearing one display's name does not silently drop every entry after it.
+    // Reading past the end of a Windhawk array just returns empty strings.
+    for (int i = 0; i < 64; i++)
     {
-        std::wstring id = GetStrValue(GuiKey(i, -1, L"id").c_str());
+        std::wstring id = TrimStr(GetSettingStr(L"displays[%d].monitor", i));
         if (id.empty())
             continue;
 
         MonitorZoneConfig cfg;
         cfg.monitorId = id;
 
+        bool seen[ZONE_COUNT] = {};
         bool any = false;
-        for (int z = 0; z < ZONE_COUNT; z++)
+
+        for (int z = 0;; z++)
         {
-            std::wstring a = GetStrValue(GuiKey(i, z, L"a").c_str());
-            std::wstring g = GetStrValue(GuiKey(i, z, L"g").c_str());
-            CornerAction act = ParseActionType(a);
-            cfg.zones[z].action = act;
-            cfg.zones[z].args = g;
-            cfg.zones[z].executor = MakeExecutor(act, g);
-            cfg.zones[z].tuning.size = Wh_GetIntValue(GuiKey(i, z, L"sz").c_str(), -1);
-            cfg.zones[z].tuning.delay = Wh_GetIntValue(GuiKey(i, z, L"dl").c_str(), -1);
-            cfg.zones[z].tuning.settle = Wh_GetIntValue(GuiKey(i, z, L"gd").c_str(), -1);
-            cfg.zones[z].tuning.knock = Wh_GetIntValue(GuiKey(i, z, L"kn").c_str(), -1);
-            cfg.zones[z].tuning.cooldown = Wh_GetIntValue(GuiKey(i, z, L"cd").c_str(), -1);
-            cfg.zones[z].tuning.modifier = Wh_GetIntValue(GuiKey(i, z, L"md").c_str(), -1);
+            std::wstring zname =
+                GetSettingStr(L"displays[%d].zones[%d].zone", i, z);
+            if (zname.empty())
+                break;
+
+            int zi = ParseZoneName(zname);
+            std::wstring aname =
+                GetSettingStr(L"displays[%d].zones[%d].action", i, z);
+            std::wstring args =
+                GetSettingStr(L"displays[%d].zones[%d].args", i, z);
+
+            // An unknown zone name, or a repeat of one already filled in,
+            // is skipped rather than allowed to overwrite.
+            if (zi < 0 || seen[zi])
+                continue;
+            seen[zi] = true;
+
+            CornerAction act = ParseActionType(aname);
+            cfg.zones[zi].action = act;
+            cfg.zones[zi].args = args;
+            cfg.zones[zi].executor = MakeExecutor(act, args);
+
+            // Hold: "the same action again" is resolved here rather than in
+            // MakeExecutor, which has no way to know what the entry action was.
+            // An Alternate entry gets its own flip flag for the release half,
+            // which is right - the pair alternates as one.
+            CornerAction rel = ParseActionType(
+                GetSettingStr(L"displays[%d].zones[%d].releaseAction", i, z));
+            std::wstring relArgs =
+                GetSettingStr(L"displays[%d].zones[%d].releaseArgs", i, z);
+            cfg.zones[zi].releaseAction = rel;
+            cfg.zones[zi].releaseArgs = relArgs;
+            // Nothing is built for SameAsEntry on purpose: BuildZoneSet
+            // substitutes the entry executor for that case, so a second one
+            // would never be read - and for an Alternate entry it would carry
+            // its own flip flag, which is the drift that substitution fixed.
+            if (rel != CornerAction::Nothing &&
+                rel != CornerAction::SameAsEntry)
+                cfg.zones[zi].releaseExecutor = MakeExecutor(rel, relArgs);
+            cfg.zones[zi].tuning.size =
+                Wh_GetIntSetting(L"displays[%d].zones[%d].size", i, z);
+            cfg.zones[zi].tuning.delay =
+                Wh_GetIntSetting(L"displays[%d].zones[%d].delay", i, z);
+            cfg.zones[zi].tuning.settle =
+                Wh_GetIntSetting(L"displays[%d].zones[%d].settle", i, z);
+            cfg.zones[zi].tuning.knock =
+                Wh_GetIntSetting(L"displays[%d].zones[%d].knock", i, z);
+            cfg.zones[zi].tuning.cooldown =
+                Wh_GetIntSetting(L"displays[%d].zones[%d].cooldown", i, z);
+            cfg.zones[zi].tuning.modifier = ParseModifierName(
+                GetSettingStr(L"displays[%d].zones[%d].modifier", i, z));
+
             if (act != CornerAction::Nothing)
                 any = true;
         }
+
         if (any)
             configs.push_back(std::move(cfg));
     }
+
     return configs;
 }
 
-// Back to a fresh install. -1 is the "never written" marker every reader tests
-// for, so this is a reset rather than a write of zeroes.
-static void ClearStoredConfig()
+// Every global, straight off the settings page.
+static void ApplySettingsGlobals(ModSettings &s)
 {
-    // Every scalar the dashboard and the tray can write. Missing one here used
-    // to leave it behind after a Reset, still applied but no longer visible.
-    for (const wchar_t *k :
-         {kOvrEnabled, kOvrFullscreen, kOvrDrag, L"ovr_corner", L"ovr_edge",
-          L"ovr_delay", L"ovr_settle", L"ovr_knock", L"ovr_cooldown",
-          L"ovr_centre", L"ovr_modifier", L"ovr_lockblank", L"ovr_taskbar",
-          L"ovr_monnames"})
-        Wh_SetIntValue(k, -1);
-    Wh_SetStringValue(L"ovr_excluded", L"");
+    auto clamp = [](int v, int lo, int hi)
+    { return v < lo ? lo : (v > hi ? hi : v); };
 
-    Wh_SetIntValue(L"gui_active", 0);
-    for (int i = 0; i < kMaxGuiConfigs; i++)
-    {
-        Wh_SetStringValue(GuiKey(i, -1, L"id").c_str(), L"");
-        for (int z = 0; z < ZONE_COUNT; z++)
-        {
-            Wh_SetStringValue(GuiKey(i, z, L"a").c_str(), L"");
-            Wh_SetStringValue(GuiKey(i, z, L"g").c_str(), L"");
-            for (const wchar_t *k : {L"sz", L"dl", L"gd", L"kn", L"cd", L"md"})
-                Wh_SetIntValue(GuiKey(i, z, k).c_str(), -1);
-        }
-    }
-}
+    s.cornerSize = clamp(Wh_GetIntSetting(L"cornerSize"), 1, 500);
+    s.edgeSize = clamp(Wh_GetIntSetting(L"edgeSize"), 1, 500);
+    s.centerZonePercent = clamp(Wh_GetIntSetting(L"centerPercent"), 1, 90);
+    s.activationDelay = clamp(Wh_GetIntSetting(L"delay"), 0, 10000);
+    s.settleMs = clamp(Wh_GetIntSetting(L"settle"), 0, 10000);
+    s.knockWindowMs = clamp(Wh_GetIntSetting(L"knock"), 0, 10000);
+    s.cooldownMs = clamp(Wh_GetIntSetting(L"cooldown"), 0, 60000);
+    int mod = ParseModifierName(GetSettingStr(L"requireModifier"));
+    s.requireModifier = (mod < 0) ? 0 : mod;
+    s.disableOnFullscreen = Wh_GetIntSetting(L"disableOnFullscreen") != 0;
+    s.disableDuringDrag = Wh_GetIntSetting(L"disableDuringDrag") != 0;
+    s.avoidTaskbar = Wh_GetIntSetting(L"avoidTaskbar") != 0;
 
-// The whole of this mod's configuration, read and applied as one transaction.
-//
-// Built into a local first, with no lock held: this reads every key in the
-// value store and constructs a std::function per zone, and three other threads
-// want g_settingsLock while that happens - the detection thread in
-// BuildZoneSet, the action worker before every trigger, and the tray thread
-// building its menu. The lock is taken once, for the swap.
-//
-// Doing it in two phases (defaults, then the stored values on top) left a
-// window in which g_settings was a complete, plausible, *wrong* configuration:
-// a rebuild landing in that window published an empty zone set and logged "No
-// zones are active". Four of the six callers run on a thread other than the
-// one that starts the mod, so that window was reachable.
-//
-// Keys still carry the historical "ovr_" prefix - back when there was a
-// Windhawk settings page these were overrides on top of it. They are the
-// configuration itself now; the prefix stays so an existing setup is not
-// orphaned. An unset key reads back as -1, which fails every range test below,
-// so a value the user has never touched simply keeps its default.
-static void ReloadConfig()
-{
-    EnterCriticalSection(&g_reloadLock);
+    g_lockBlankDelayMs = clamp(Wh_GetIntSetting(L"lockBlankDelay"), 0, 10000);
+    g_showMonitorNames = Wh_GetIntSetting(L"showMonitorNames") != 0;
 
-    ModSettings s;   // the member initialisers are the defaults
-
-    int v = Wh_GetIntValue(kOvrEnabled, -1);
-    g_trayEnabled = (v < 0) ? true : (v != 0);
-
-    v = Wh_GetIntValue(kOvrFullscreen, -1);
-    if (v >= 0)
-        s.disableOnFullscreen = (v != 0);
-
-    v = Wh_GetIntValue(kOvrDrag, -1);
-    if (v >= 0)
-        s.disableDuringDrag = (v != 0);
-
-    auto pull = [](const wchar_t *k, int &dst, int lo, int hi)
-    {
-        int x = Wh_GetIntValue(k, -1);
-        if (x >= lo && x <= hi)
-            dst = x;
-    };
-    pull(L"ovr_corner", s.cornerSize, 1, 500);
-    pull(L"ovr_edge", s.edgeSize, 1, 500);
-    pull(L"ovr_delay", s.activationDelay, 0, 10000);
-    pull(L"ovr_settle", s.settleMs, 0, 10000);
-    pull(L"ovr_knock", s.knockWindowMs, 0, 10000);
-    pull(L"ovr_cooldown", s.cooldownMs, 0, 60000);
-    pull(L"ovr_centre", s.centerZonePercent, 1, 90);
-    pull(L"ovr_modifier", s.requireModifier, 0, 4);
-
-    int x = Wh_GetIntValue(L"ovr_taskbar", -1);
-    if (x >= 0)
-        s.avoidTaskbar = (x != 0);
-
-    // Via a local: pull takes int&, and these two globals are atomic because
-    // other threads read them while this runs.
-    int lockBlank = 1200;
-    pull(L"ovr_lockblank", lockBlank, 0, 10000);
-    g_lockBlankDelayMs = lockBlank;
-    x = Wh_GetIntValue(L"ovr_monnames", -1);
-    g_showMonitorNames = (x < 0) ? true : (x != 0);
-
-    // s starts empty, so clearing the field in the dashboard genuinely clears
-    // the list - no "if the stored string is non-empty" guard needed.
-    std::wstring rest = GetStrValue(L"ovr_excluded");
+    std::wstring rest = GetSettingStr(L"excluded");
     while (!rest.empty())
     {
         auto semi = rest.find(L';');
@@ -3096,8 +3793,37 @@ static void ReloadConfig()
         if (!tok.empty())
             s.excludedProcesses.push_back(ToLowerStr(tok));
     }
+}
 
-    s.monitorConfigs = ReadDashboardZones();
+
+// The whole of this mod's configuration, read and applied as one transaction.
+//
+// Built into a local first, with no lock held: this reads every key in the
+// value store and constructs a std::function per zone, and three other threads
+// want g_settingsLock while that happens - the detection thread in
+// BuildZoneSet, the action worker before every trigger, and the tray thread
+// building its menu. The lock is taken once, for the swap.
+//
+// Doing it in two phases (defaults, then the stored values on top) left a
+// window in which g_settings was a complete, plausible, *wrong* configuration:
+// a rebuild landing in that window published an empty zone set and logged "No
+// zones are active". Four of the six callers run on a thread other than the
+// one that starts the mod, so that window was reachable.
+//
+// The settings page owns every global. The value store is read for the enable
+// flag and nothing else - never for anything a page field also controls,
+// because the two would then disagree with nothing on screen saying which won.
+static void ReloadConfig()
+{
+    EnterCriticalSection(&g_reloadLock);
+
+    ModSettings s;   // the member initialisers are the defaults
+
+    int v = Wh_GetIntValue(kOvrEnabled, -1);
+    g_trayEnabled = (v < 0) ? true : (v != 0);
+
+    s.monitorConfigs = ReadSettingsZones();
+    ApplySettingsGlobals(s);
 
     // Copied out before the move, so the summary can be logged after the lock
     // is released - Wh_Log goes through OutputDebugString and takes a
@@ -3113,8 +3839,15 @@ static void ReloadConfig()
     LeaveCriticalSection(&g_settingsLock);
 
     if (zoneCount)
-        Wh_Log(L"Using the dashboard's zone layout (%d configuration%s)",
-               zoneCount, zoneCount == 1 ? L"" : L"s");
+    {
+        Wh_Log(L"%d display%s configured", zoneCount,
+               zoneCount == 1 ? L"" : L"s");
+    }
+    else
+    {
+        Wh_Log(L"No displays are configured. Open this mod's Settings page and "
+               L"add one, then add the zones you want.");
+    }
     Wh_Log(L"Sizes: corner %dpx, edge %dpx.  Timing: delay %dms, "
            L"pass-through guard %dms, cooldown %dms.",
            cs, es, dl, st, cd);
@@ -3151,28 +3884,71 @@ static void ShowTrayMenu(POINT pt)
     AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hSuspend,
                 suspended ? L"Suspended..." : L"Suspend for");
 
-    AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
-
-    EnterCriticalSection(&g_settingsLock);
-    bool fs = g_settings.disableOnFullscreen;
-    bool drag = g_settings.disableDuringDrag;
-    LeaveCriticalSection(&g_settingsLock);
-
-    AppendMenuW(hMenu, MF_STRING | (fs ? MF_CHECKED : 0), IDM_FULLSCREEN,
-                L"Skip while an app is fullscreen");
-    AppendMenuW(hMenu, MF_STRING | (drag ? MF_CHECKED : 0), IDM_DRAG,
-                L"Skip while dragging the mouse");
-
+    // "Skip while fullscreen" and "Skip while dragging" used to live here. They
+    // are settings, not runtime state, and a mod cannot write its own settings,
+    // so the tray copy could only ever diverge - toggling one worked until the
+    // next reload put it back. They belong to the settings page alone now;
+    // enable and suspend stay because neither has a page equivalent.
     AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(hMenu, MF_STRING, IDM_CLEAR_OVERRIDES,
-                L"Reset these toggles");
+                L"Reset enable and suspend");
     AppendMenuW(hMenu, MF_STRING | MF_DISABLED, IDM_ABOUT,
                 L"Win-X Hot Corners " WH_MOD_VERSION);
 
+    // Anchor to the tray icon rather than to the pointer. A menu that opens
+    // wherever the cursor happened to be lands at a different place every
+    // time; anchoring puts it in the one spot muscle memory expects, which is
+    // what every other tray menu does.
+    UINT align = TPM_RIGHTBUTTON;
+    // Mirror however the icon was actually registered. Passing the GUID after
+    // UpdateTrayIcon has fallen back to plain uID identity makes the lookup
+    // fail, and the menu quietly stops anchoring - the one case this exists for.
+    NOTIFYICONIDENTIFIER nii = {sizeof(nii)};
+    nii.hWnd = g_hTrayWnd.load();
+    if (g_trayUseGuid)
+        nii.guidItem = kTrayIconGuid;
+    else
+        nii.uID = (UINT)kTrayIconId;
+    RECT icon = {};
+    if (SUCCEEDED(Shell_NotifyIconGetRect(&nii, &icon)))
+    {
+        // Open from the icon's outer edge, away from whichever screen edge the
+        // taskbar is docked against, so the menu never covers the icon.
+        APPBARDATA abd = {sizeof(abd)};
+        UINT edge = ABE_BOTTOM;
+        if (SHAppBarMessage(ABM_GETTASKBARPOS, &abd))
+            edge = abd.uEdge;
+
+        switch (edge)
+        {
+        case ABE_TOP:
+            pt.x = (icon.left + icon.right) / 2;
+            pt.y = icon.bottom;
+            align |= TPM_CENTERALIGN | TPM_TOPALIGN;
+            break;
+        case ABE_LEFT:
+            pt.x = icon.right;
+            pt.y = (icon.top + icon.bottom) / 2;
+            align |= TPM_LEFTALIGN | TPM_VCENTERALIGN;
+            break;
+        case ABE_RIGHT:
+            pt.x = icon.left;
+            pt.y = (icon.top + icon.bottom) / 2;
+            align |= TPM_RIGHTALIGN | TPM_VCENTERALIGN;
+            break;
+        default:
+            pt.x = (icon.left + icon.right) / 2;
+            pt.y = icon.top;
+            align |= TPM_CENTERALIGN | TPM_BOTTOMALIGN;
+            break;
+        }
+    }
+
     // Required so the menu dismisses when the user clicks elsewhere.
-    SetForegroundWindow(g_hTrayWnd);
-    TrackPopupMenu(hMenu, TPM_RIGHTBUTTON, pt.x, pt.y, 0, g_hTrayWnd, nullptr);
-    PostMessage(g_hTrayWnd, WM_NULL, 0, 0);
+    HWND hTray = g_hTrayWnd.load();
+    SetForegroundWindow(hTray);
+    TrackPopupMenu(hMenu, align, pt.x, pt.y, 0, hTray, nullptr);
+    PostMessage(hTray, WM_NULL, 0, 0);
 
     DestroyMenu(hMenu);
 }
@@ -3180,8 +3956,14 @@ static void ShowTrayMenu(POINT pt)
 // The zone snapshot carries drag/settle, so a change there needs a rebuild.
 static void RequestRebuild()
 {
-    if (g_hDetectWnd)
-        PostMessage(g_hDetectWnd, WM_APP_REBUILD, 0, 0);
+    if (HWND hDetect = g_hDetectWnd.load())
+        PostMessage(hDetect, WM_APP_REBUILD, 0, 0);
+}
+
+static void CancelSuspendTimer()
+{
+    if (HWND hTray = g_hTrayWnd.load())
+        KillTimer(hTray, kSuspendTimerId);
 }
 
 static void HandleTrayCommand(UINT id)
@@ -3201,6 +3983,7 @@ static void HandleTrayCommand(UINT id)
         Wh_SetIntValue(kOvrEnabled, g_trayEnabled ? 1 : 0);
         LeaveCriticalSection(&g_reloadLock);
         g_suspendUntil = 0;
+        CancelSuspendTimer();
         Wh_Log(L"Tray: hot corners %s", g_trayEnabled ? L"enabled" : L"disabled");
         break;
 
@@ -3210,56 +3993,35 @@ static void HandleTrayCommand(UINT id)
     {
         int mins = (id == IDM_SUSPEND_15) ? 15 : (id == IDM_SUSPEND_30) ? 30 : 60;
         g_suspendUntil = GetTickCount64() + (ULONGLONG)mins * 60 * 1000;
+        // Detection re-reads the deadline every tick, so the corners come back
+        // on their own - but nothing redrew the icon, which stayed dimmed and
+        // still said "paused" for the rest of the session. Suspension is
+        // exactly when the icon is the thing being looked at.
+        if (HWND hTray = g_hTrayWnd.load())
+            SetTimer(hTray, kSuspendTimerId,
+                     (UINT)mins * 60 * 1000 + 1000, nullptr);
         Wh_Log(L"Tray: suspended for %d minutes", mins);
         break;
     }
 
     case IDM_RESUME:
         g_suspendUntil = 0;
+        CancelSuspendTimer();
         Wh_Log(L"Tray: resumed");
         break;
 
-    // These two mutate the live configuration and write the key behind it, so
-    // they take g_reloadLock for the same reason a save does: a reload landing
-    // between the two halves would either lose the toggle or read it twice.
-    case IDM_FULLSCREEN:
-    {
-        EnterCriticalSection(&g_reloadLock);
-        EnterCriticalSection(&g_settingsLock);
-        g_settings.disableOnFullscreen = !g_settings.disableOnFullscreen;
-        int v = g_settings.disableOnFullscreen ? 1 : 0;
-        LeaveCriticalSection(&g_settingsLock);
-        Wh_SetIntValue(kOvrFullscreen, v);
-        LeaveCriticalSection(&g_reloadLock);
-        break;
-    }
-
-    case IDM_DRAG:
-    {
-        EnterCriticalSection(&g_reloadLock);
-        EnterCriticalSection(&g_settingsLock);
-        g_settings.disableDuringDrag = !g_settings.disableDuringDrag;
-        int v = g_settings.disableDuringDrag ? 1 : 0;
-        LeaveCriticalSection(&g_settingsLock);
-        Wh_SetIntValue(kOvrDrag, v);
-        LeaveCriticalSection(&g_reloadLock);
-        RequestRebuild();
-        break;
-    }
-
-    // Only the three toggles in this menu, and the suspend timer. Wiping the
-    // zone layout from a menu item with no confirmation would be a trap; the
-    // dashboard's Reset button does that, behind a prompt.
+    // Only what this menu owns: the enable flag and the suspend timer. Wiping
+    // the zone layout from a menu item with no confirmation would be a trap,
+    // and everything else now lives on the settings page.
     case IDM_CLEAR_OVERRIDES:
         EnterCriticalSection(&g_reloadLock);
         Wh_SetIntValue(kOvrEnabled, -1);
-        Wh_SetIntValue(kOvrFullscreen, -1);
-        Wh_SetIntValue(kOvrDrag, -1);
         g_suspendUntil = 0;
+        CancelSuspendTimer();
         ReloadConfig();
         LeaveCriticalSection(&g_reloadLock);
         RequestRebuild();
-        Wh_Log(L"Tray: toggles reset to defaults");
+        Wh_Log(L"Tray: enable and suspend reset to defaults");
         break;
 
     default:
@@ -3283,7 +4045,11 @@ static void HandleTrayCommand(UINT id)
 // what makes it look native.
 
 static HANDLE g_hDashThread = nullptr;
-static HWND g_hDashWnd = nullptr;
+// Written by the dashboard thread, read by Windhawk's thread
+// (WhTool_ModSettingsChanged, WhTool_ModUninit) and the tray thread
+// (OpenDashboard). g_trayEnabled, g_suspendUntil and g_trayUseGuid are all
+// atomic for the same reason; this one was missed.
+static std::atomic<HWND> g_hDashWnd{nullptr};
 
 // The dashboard followed the system theme in neither direction before: it was
 // hard-coded dark, so on a light desktop the text was near-invisible. The
@@ -3291,7 +4057,7 @@ static HWND g_hDashWnd = nullptr;
 // change it.
 struct Palette
 {
-    COLORREF bg, panel, text, dim, field, fieldText, border, accent, accentText;
+    COLORREF bg, text, dim, field, border, accent, accentText;
 };
 static Palette g_pal;
 static bool g_lightTheme = false;
@@ -3319,177 +4085,174 @@ static void BuildPalette()
     g_lightTheme = SystemUsesLightTheme();
     if (g_lightTheme)
     {
-        g_pal = {RGB(243, 243, 243), RGB(251, 251, 251), RGB(26, 26, 26),
-                 RGB(95, 95, 95),    RGB(255, 255, 255), RGB(26, 26, 26),
-                 RGB(214, 214, 214), RGB(0, 95, 184),    RGB(255, 255, 255)};
+        g_pal = {/* bg     */ RGB(243, 243, 243),
+                 /* text   */ RGB(26, 26, 26),
+                 /* dim    */ RGB(95, 95, 95),
+                 /* field  */ RGB(255, 255, 255),
+                 /* border */ RGB(214, 214, 214),
+                 /* accent */ RGB(0, 95, 184),
+                 /* on-acc */ RGB(255, 255, 255)};
     }
     else
     {
-        g_pal = {RGB(32, 32, 32),    RGB(43, 43, 43),   RGB(255, 255, 255),
-                 RGB(170, 170, 170), RGB(45, 45, 45),   RGB(255, 255, 255),
-                 RGB(70, 70, 70),    RGB(76, 194, 255), RGB(0, 0, 0)};
+        g_pal = {/* bg     */ RGB(32, 32, 32),
+                 /* text   */ RGB(255, 255, 255),
+                 /* dim    */ RGB(170, 170, 170),
+                 /* field  */ RGB(45, 45, 45),
+                 /* border */ RGB(70, 70, 70),
+                 /* accent */ RGB(76, 194, 255),
+                 /* on-acc */ RGB(0, 0, 0)};
     }
 }
 
 enum DashId
 {
-    IDC_MONITOR = 1000,
-    IDC_PAGE_ZONES,
-    IDC_PAGE_OPTIONS,
-    IDC_SAVE,
-    IDC_CANCEL,
-    IDC_RESET,
-    IDC_ZONE_ACTION = 1100,           // + zone index
-    IDC_ZONE_ARGS = 1200,             // + zone index
-    IDC_HDR_ZONE = 1250,
-    IDC_HDR_ACTION,
-    IDC_HDR_ARGS,
-    IDC_TZ_TITLE,
-    IDC_TZ_HINT,
-    IDC_TZ_FIRST = 1260,   // six per-zone override fields
-    IDC_TZ_SIZE = IDC_TZ_FIRST,
-    IDC_TZ_DELAY,
-    IDC_TZ_SETTLE,
-    IDC_TZ_KNOCK,
-    IDC_TZ_COOLDOWN,
-    IDC_TZ_MODIFIER,
-    IDC_TZ_LAST,
-    // This order is the order they appear on the Options page, and it has to
-    // stay in step with kOpts: DashSetInt indexes hOpt by (id - IDC_OPT_FIRST).
-    // A static_assert next to kOpts enforces it.
-    IDC_OPT_FIRST = 1300,
-    IDC_CORNER = IDC_OPT_FIRST,
-    IDC_EDGE,
-    IDC_CENTREPCT,
-    IDC_DELAY,
-    IDC_SETTLE,
-    IDC_KNOCK,
-    IDC_COOLDOWN,
-    IDC_MODIFIER,
-    IDC_EXCLUDED,
-    IDC_CB_FULLSCREEN,
-    IDC_CB_DRAG,
-    IDC_CB_TASKBAR,
-    IDC_LOCKBLANK,
-    IDC_CB_MONNAMES,
-    IDC_OPT_LAST,
-    IDC_OPT_SECTION,   // shared by every group heading; they carry no state
+    IDC_CLOSE = 1000,
+};
+
+// A resolved, read-only view of one zone. The dashboard shows what is actually
+// in effect, so it resolves exactly the way ResolveZone does - per zone, own
+// configuration first, then the wildcard. Anything less and the picture would
+// be able to disagree with what fires.
+struct ZoneView
+{
+    CornerAction action = CornerAction::Nothing;
+    std::wstring args;
+    ZoneTuning tuning;          // -1 in a field means "inherited"
+    bool fromWildcard = false;
+    bool invalid = false;       // configured, but its arguments do not parse
+    CornerAction releaseAction = CornerAction::Nothing;   // hold zone if set
+    std::wstring releaseArgs;
+};
+
+struct DisplayView
+{
+    std::wstring id;
+    int width = 0;
+    int height = 0;
+    // The working area, so the detail panel can clamp against the same rect
+    // BuildZoneSet used - which is this one when "Keep zones out of the
+    // taskbar" is on, and the full monitor otherwise.
+    int workWidth = 0;
+    int workHeight = 0;
+    bool primary = false;
+    bool present = true;        // attached right now
+    bool wildcard = false;      // the "*" configuration
+    ZoneView zones[ZONE_COUNT];
+    int configured = 0;
 };
 
 struct DashState
 {
     UINT dpi = 96;
     HFONT hFont = nullptr;
+    HFONT hFontBold = nullptr;
+    HFONT hFontSmall = nullptr;
+    HFONT hFontVert = nullptr;   // rotated 90 degrees, for the side strips
     HBRUSH hBg = nullptr;
-    HBRUSH hField = nullptr;
-    bool showZones = true;
-    int hoverZone = -1;   // zone highlighted in the preview
-    int selZone = 0;      // zone whose per-zone settings are being edited
-    ZoneTuning tuning[ZONE_COUNT];   // the slot currently on screen
-    int cfgIndex = 0;   // which slot in the value store we are editing
+    HICON hIcon = nullptr;     // title bar / Alt-Tab, big
+    HICON hIconSm = nullptr;   // title bar, small
 
-    // Every slot the window has touched, so switching displays does not throw
-    // the previous display's edits away and Save can write all of them. The
-    // controls only ever show one slot; this is where the other ones live.
-    struct Slot
-    {
-        bool loaded = false;
-        int store = -1;   // the g<n> group this display owns, -1 until it has one
-        int action[ZONE_COUNT] = {};
-        std::wstring args[ZONE_COUNT];
-        ZoneTuning tuning[ZONE_COUNT];
-    };
-    std::vector<Slot> slots;
+    std::vector<DisplayView> displays;
+    ModSettings globals;         // what an inherited value resolves to
 
-    // Which g<n> groups already hold a configuration. A display that is not
-    // plugged in right now still owns its group, so a new one must not take it.
-    bool storeUsed[kMaxGuiConfigs] = {};
+    int activeTab = 0;
+    int hoverZone = -1;
+    int selZone = -1;
+    std::vector<RECT> tabRects;  // filled while painting, used for hit testing
 
-    HWND hMonitor = nullptr;
-    HWND hZoneLabel[ZONE_COUNT] = {};
-    HWND hZoneAction[ZONE_COUNT] = {};
-    HWND hZoneArgs[ZONE_COUNT] = {};
-    HWND hOpt[IDC_OPT_LAST - IDC_OPT_FIRST] = {};
-    HWND hOptLabel[IDC_OPT_LAST - IDC_OPT_FIRST] = {};
-    HWND hOptSection[IDC_OPT_LAST - IDC_OPT_FIRST] = {};   // null except at a
-                                                           // group heading
-    HWND hHdrZone = nullptr, hHdrAction = nullptr, hHdrArgs = nullptr;
-    HWND hTzTitle = nullptr, hTzHint = nullptr;
-    HWND hTz[IDC_TZ_LAST - IDC_TZ_FIRST] = {};
-    HWND hTzLabel[IDC_TZ_LAST - IDC_TZ_FIRST] = {};
-    HWND hTip = nullptr;
-    HWND hPageZones = nullptr, hPageOptions = nullptr;
-    HWND hSave = nullptr, hCancel = nullptr, hReset = nullptr;
-    // WM_SETICON does not take ownership; whoever created the icon destroys it.
-    HICON hIcon = nullptr;
+    HWND hClose = nullptr;
 };
 
 static int Sc(int px, UINT dpi) { return MulDiv(px, (int)dpi, 96); }
 
-// Layout metrics at 96 DPI. The window is sized *from* these rather than the
-// other way round — the first version guessed a window size and the button bar
-// ended up on top of the last rows.
+// Layout metrics at 96 DPI. The window is sized from these rather than the
+// other way round.
 namespace Lay
 {
-constexpr int Pad = 16;
-constexpr int Gap = 8;
-constexpr int RowH = 30;
-constexpr int CheckH = 26;
-constexpr int SecH = 30;   // group heading plus the air above it
-constexpr int TabH = 28;
-constexpr int CtlH = 24;
-constexpr int BtnH = 32;
-constexpr int LblW = 128;
-constexpr int CmbW = 210;
-constexpr int ArgW = 176;
-constexpr int OptLblW = 200;
-constexpr int OptCtlW = 190;
-constexpr int DiagW = 250;
-constexpr int DiagH = 150;
-constexpr int HdrH = 22;      // column-header row
-constexpr int TzRowH = 26;    // per-zone override row
-constexpr int TzPanelH = 14 + 20 + 20 + 6 * TzRowH;
+constexpr int Pad = 18;
+constexpr int Gap = 12;
+constexpr int TabH = 36;
+constexpr int BtnH = 30;
+constexpr int BtnW = 96;
 
-constexpr int LeftBlockW = Pad + LblW + Gap + CmbW + Gap + ArgW;   // 546
-constexpr int ClientW = LeftBlockW + Gap + DiagW + Pad;            // 820
+constexpr int DiagAreaW = 560;   // the box is fitted inside this, and centred
+constexpr int DiagAreaH = 300;
+constexpr int DiagCapH = 20;     // the "3840 x 2160 - primary" caption under it
 
-// Zones page: tabs, monitor combo, twelve rows.
-constexpr int ZonesLeftH = Pad + TabH + Gap + CtlH + Gap + HdrH + ZONE_COUNT * RowH;
-constexpr int ZonesRightH = Pad + TabH + Gap + CtlH + Gap + DiagH + TzPanelH;
-constexpr int ZonesH = ZonesLeftH > ZonesRightH ? ZonesLeftH : ZonesRightH;
-// Options page: ten labelled controls, five checkboxes.
-// Ten labelled controls, four checkboxes, four group headings. kOpts is
-// declared further down, so a static_assert beside it holds this honest.
-constexpr int OptionsH = Pad + TabH + Gap + 10 * RowH + 4 * CheckH + 4 * SecH;
+constexpr int DetHeadH = 56;     // zone name, action, setting key
+constexpr int DetRowH = 21;
+constexpr int DetHdrH = 20;
+constexpr int DetailH = DetHeadH + DetHdrH + 6 * DetRowH;
 
-constexpr int ContentH = ZonesH > OptionsH ? ZonesH : OptionsH;
-constexpr int ClientH = ContentH + Gap * 2 + BtnH + Pad;
+constexpr int ClientW = DiagAreaW + Pad * 2;
+constexpr int ClientH = Pad + TabH + Gap + DiagAreaH + DiagCapH + Gap +
+                        DetailH + Gap + BtnH + Pad;
 }  // namespace Lay
 
-// Where the little screen preview sits, and where each zone sits inside it.
-static RECT DashDiagramRect(UINT dpi)
+// The area the screen box is fitted into.
+static RECT DashDiagramArea(UINT dpi)
 {
     RECT r;
-    r.left = Sc(Lay::LeftBlockW + Lay::Gap, dpi);
-    r.top = Sc(Lay::Pad + Lay::TabH + Lay::Gap + Lay::CtlH + Lay::Gap, dpi);
-    r.right = r.left + Sc(Lay::DiagW, dpi);
-    r.bottom = r.top + Sc(Lay::DiagH, dpi);
+    r.left = Sc(Lay::Pad, dpi);
+    r.top = Sc(Lay::Pad + Lay::TabH + Lay::Gap, dpi);
+    r.right = r.left + Sc(Lay::DiagAreaW, dpi);
+    r.bottom = r.top + Sc(Lay::DiagAreaH, dpi);
     return r;
 }
 
-// Proportions inside the preview, mirroring how the real zones are built:
-// corners in the four corners, edges along the sides with the corners carved
-// out, and a centre block in the middle of each edge.
-// Proportions inside the preview, mirroring how the real zones are built.
-// The edges are split around the centre blocks rather than drawn through
-// them - previously they overlapped, so hovering a centre highlighted the
-// whole edge and the centre punched a hole in it.
-static RECT ZoneRectInDiagram(Zone z, const RECT &d, bool secondHalf)
+// The screen box itself: the display's real aspect ratio, fitted inside the
+// area and centred. A portrait or ultrawide display therefore looks like one
+// instead of being forced into a fixed rectangle.
+static RECT DashDiagramRect(const DashState *s)
+{
+    RECT a = DashDiagramArea(s->dpi);
+    int aw = a.right - a.left, ah = a.bottom - a.top;
+
+    int mw = 16, mh = 9;
+    if (s->activeTab >= 0 && s->activeTab < (int)s->displays.size())
+    {
+        const DisplayView &d = s->displays[s->activeTab];
+        if (d.width > 0 && d.height > 0)
+        {
+            mw = d.width;
+            mh = d.height;
+        }
+    }
+
+    // Fit, never stretch: whichever axis runs out first sets the scale.
+    int w = aw, h = (int)((LONGLONG)aw * mh / mw);
+    if (h > ah)
+    {
+        h = ah;
+        w = (int)((LONGLONG)ah * mw / mh);
+    }
+
+    RECT r;
+    r.left = a.left + (aw - w) / 2;
+    r.top = a.top + (ah - h) / 2;
+    r.right = r.left + w;
+    r.bottom = r.top + h;
+    return r;
+}
+
+// Proportions inside the preview. Deliberately not to scale: the real zones are
+// a few pixels thick and would be invisible. What has to be true is that the
+// blocks tile the border exactly, with no overlap and no gap.
+//
+// The corner block stays square by deriving from the shorter side. The edge
+// band is thick enough to hold a label - at the old c/2 a side strip was too
+// narrow and the text spilled outside the screen box.
+//
+// Every zone is exactly one rectangle now that an edge is three segments
+// rather than one zone wrapped around a centre, which is what removed the
+// old two-part special case and the overlap bug that came with it.
+static RECT ZoneRectInDiagram(Zone z, const RECT &d)
 {
     int w = d.right - d.left, h = d.bottom - d.top;
-    int c = (w < h ? w : h) / 6;         // corner block
-    int t = c / 2;                       // edge thickness
-    int cw = w / 5, ch = h / 5;          // centre block extent
+    int c = (w < h ? w : h) / 5;         // corner block, square
+    int t = c * 62 / 100;                // edge band thickness
+    int cw = w * 22 / 100, ch = h * 22 / 100;   // middle segment extent
     int cx0 = d.left + w / 2 - cw / 2, cx1 = cx0 + cw;
     int cy0 = d.top + h / 2 - ch / 2, cy1 = cy0 + ch;
 
@@ -3500,40 +4263,67 @@ static RECT ZoneRectInDiagram(Zone z, const RECT &d, bool secondHalf)
     case ZONE_BOTTOM_LEFT:   return {d.left, d.bottom - c, d.left + c, d.bottom};
     case ZONE_BOTTOM_RIGHT:  return {d.right - c, d.bottom - c, d.right, d.bottom};
 
-    case ZONE_EDGE_TOP:
-        return secondHalf ? RECT{cx1, d.top, d.right - c, d.top + t}
-                          : RECT{d.left + c, d.top, cx0, d.top + t};
-    case ZONE_EDGE_BOTTOM:
-        return secondHalf ? RECT{cx1, d.bottom - t, d.right - c, d.bottom}
-                          : RECT{d.left + c, d.bottom - t, cx0, d.bottom};
-    case ZONE_EDGE_LEFT:
-        return secondHalf ? RECT{d.left, cy1, d.left + t, d.bottom - c}
-                          : RECT{d.left, d.top + c, d.left + t, cy0};
-    case ZONE_EDGE_RIGHT:
-        return secondHalf ? RECT{d.right - t, cy1, d.right, d.bottom - c}
-                          : RECT{d.right - t, d.top + c, d.right, cy0};
+    case ZONE_TOP_START:     return {d.left + c, d.top, cx0, d.top + t};
+    case ZONE_TOP_MIDDLE:    return {cx0, d.top, cx1, d.top + t};
+    case ZONE_TOP_END:       return {cx1, d.top, d.right - c, d.top + t};
 
-    case ZONE_CENTER_TOP:    return {cx0, d.top, cx1, d.top + t};
-    case ZONE_CENTER_BOTTOM: return {cx0, d.bottom - t, cx1, d.bottom};
-    case ZONE_CENTER_LEFT:   return {d.left, cy0, d.left + t, cy1};
-    case ZONE_CENTER_RIGHT:  return {d.right - t, cy0, d.right, cy1};
+    case ZONE_BOTTOM_START:  return {d.left + c, d.bottom - t, cx0, d.bottom};
+    case ZONE_BOTTOM_MIDDLE: return {cx0, d.bottom - t, cx1, d.bottom};
+    case ZONE_BOTTOM_END:    return {cx1, d.bottom - t, d.right - c, d.bottom};
+
+    case ZONE_LEFT_START:    return {d.left, d.top + c, d.left + t, cy0};
+    case ZONE_LEFT_MIDDLE:   return {d.left, cy0, d.left + t, cy1};
+    case ZONE_LEFT_END:      return {d.left, cy1, d.left + t, d.bottom - c};
+
+    case ZONE_RIGHT_START:   return {d.right - t, d.top + c, d.right, cy0};
+    case ZONE_RIGHT_MIDDLE:  return {d.right - t, cy0, d.right, cy1};
+    case ZONE_RIGHT_END:     return {d.right - t, cy1, d.right, d.bottom - c};
+
     default:                 return {0, 0, 0, 0};
     }
 }
 
-// An edge occupies two rectangles once a centre is carved out of it, so both
-// have to be drawn and both have to be hit-tested.
-static bool ZoneHasTwoParts(Zone z)
+static bool ZoneIsCorner(Zone z) { return z <= ZONE_BOTTOM_RIGHT; }
+
+// The three segments of the edge a zone belongs to, or false for a corner.
+// An edge is one strip, so its thickness is a property of the trio rather than
+// of whichever segment you happen to be looking at.
+static bool EdgeTrio(Zone z, Zone out[3])
 {
-    return z == ZONE_EDGE_TOP || z == ZONE_EDGE_BOTTOM || z == ZONE_EDGE_LEFT ||
-           z == ZONE_EDGE_RIGHT;
+    struct Run
+    {
+        Zone lo, mid, hi;
+    };
+    static const Run kRuns[] = {
+        {ZONE_TOP_START, ZONE_TOP_MIDDLE, ZONE_TOP_END},
+        {ZONE_BOTTOM_START, ZONE_BOTTOM_MIDDLE, ZONE_BOTTOM_END},
+        {ZONE_LEFT_START, ZONE_LEFT_MIDDLE, ZONE_LEFT_END},
+        {ZONE_RIGHT_START, ZONE_RIGHT_MIDDLE, ZONE_RIGHT_END},
+    };
+    for (const Run &r : kRuns)
+    {
+        if (z >= r.lo && z <= r.hi)
+        {
+            out[0] = r.lo;
+            out[1] = r.mid;
+            out[2] = r.hi;
+            return true;
+        }
+    }
+    return false;
+}
+
+// The left and right strips are tall and narrow. Rotating the text is the only
+// way a label such as "Notification Centre" fits inside one.
+static bool ZoneIsVertical(Zone z)
+{
+    return z >= ZONE_LEFT_START && z <= ZONE_RIGHT_END;
 }
 
 // subIdList is nullptr for "keep the default part list", which is what naming
 // a theme (DarkMode_CFD) wants. Disabling theming outright is the exception:
 // SetWindowTheme only stops theming a control when *both* strings are empty,
-// and a still-themed control ignores colour messages such as
-// TTM_SETTIPBKCOLOR — which is why the tooltip stayed light.
+// and a still-themed control ignores colour messages entirely.
 // Resolved once: theming runs about forty times while the dashboard is built,
 // and the LoadLibraryEx fallback used to take a reference every time without
 // ever releasing it.
@@ -3649,323 +4439,425 @@ static void ApplyModernFrame(HWND hWnd)
         FreeLibrary(dwm);
 }
 
-static const wchar_t *kActionIds[] = {
-    L"ACTION_NOTHING",        L"ACTION_SHOW_DESKTOP",
-    L"ACTION_TASK_VIEW",      L"ACTION_SWITCH_LAST",
-    L"ACTION_TASK_SWITCHER",  L"ACTION_START_MENU",
-    L"ACTION_SEARCH",         L"ACTION_SETTINGS",
-    L"ACTION_FILE_EXPLORER",  L"ACTION_QUICK_SETTINGS",
-    L"ACTION_NOTIFICATION_CENTER", L"ACTION_CLIPBOARD",
-    L"ACTION_SCREENSHOT",     L"ACTION_PROJECT",
-    L"ACTION_TASK_MANAGER",   L"ACTION_MUTE",
-    L"ACTION_MINIMIZE",       L"ACTION_MAXIMIZE",
-    L"ACTION_SNAP_LEFT",      L"ACTION_SNAP_RIGHT",
-    L"ACTION_CLOSE_WINDOW",   L"ACTION_HIDE_OTHERS",
-    L"ACTION_VDESK_NEXT",     L"ACTION_VDESK_PREV",
-    L"ACTION_VDESK_NEW",      L"ACTION_VDESK_CLOSE",
-    L"ACTION_LOCK",           L"ACTION_LOCK_MONITORS_OFF",
-    L"ACTION_MONITORS_OFF",   L"ACTION_SLEEP",
-    L"ACTION_SCREENSAVER",    L"ACTION_KEEP_AWAKE_ON",
-    L"ACTION_KEEP_AWAKE_OFF", L"ACTION_SEND_KEYPRESS",
-    L"ACTION_ALTERNATE_KEYPRESS", L"ACTION_START_PROCESS",
-    L"ACTION_ALTERNATE_COMMAND",
-};
-static constexpr int kActionCount = ARRAYSIZE(kActionIds);
+// =====================================================================
+// Reading the live configuration
+// =====================================================================
+//
+// The dashboard reads what ReloadConfig already resolved, rather than reading
+// the settings itself. Resolving twice is how a picture starts disagreeing
+// with what actually fires; reading the resolved result makes that impossible
+// by construction.
 
-// Per-zone override fields. Blank means "inherit the global value", which is
-// why every one of these can be left empty.
-struct TzDef
+static const wchar_t *kTuningNames[] = {
+    L"Size", L"Activation delay", L"Pass-through guard",
+    L"Knock window", L"Cooldown", L"Modifier",
+};
+
+// Pulls one tuning field out by index, keeping the six rows and the six struct
+// members from being wired up twice.
+static int TuningField(const ZoneTuning &t, int i)
 {
-    int id;
-    const wchar_t *label;
-    const wchar_t *tip;
-};
-static const TzDef kTz[] = {
-    {IDC_TZ_SIZE, L"Size (px)",
-     L"How big this corner square or edge strip is, in pixels. Leave blank to "
-     L"use the global corner/edge size."},
-    {IDC_TZ_DELAY, L"Delay (ms)",
-     L"How long the cursor must sit in this zone before it fires. 0 is "
-     L"immediate. Blank inherits the global activation delay."},
-    {IDC_TZ_SETTLE, L"Guard (ms)",
-     L"Stops this zone firing when you merely pass through it on the way "
-     L"somewhere else. Blank inherits the global pass-through guard."},
-    {IDC_TZ_KNOCK, L"Knock (ms)",
-     L"Require entering this zone twice within this many milliseconds, like "
-     L"knocking. 0 disables it. Blank inherits the global setting."},
-    {IDC_TZ_COOLDOWN, L"Cooldown (ms)",
-     L"Minimum gap before this zone can fire again. Blank inherits the global "
-     L"cooldown."},
-    {IDC_TZ_MODIFIER, L"Modifier",
-     L"Only fire this zone while the chosen key is held. Inherit uses the "
-     L"global setting."},
-};
-static constexpr int kTzCount = ARRAYSIZE(kTz);
-
-struct OptDef
-{
-    int id;
-    const wchar_t *label;
-    bool isCheck;
-    const wchar_t *tip;
-    // Heading drawn above this row, or nullptr to continue the current group.
-    // Fourteen fields in one flat column was a wall; four short groups is the
-    // same information you can actually scan.
-    const wchar_t *section;
-};
-static constexpr OptDef kOpts[] = {
-    {IDC_CORNER, L"Corner size (px)", false, L"Default size of the four corner squares. Individual corners can override this on the Zones page.", L"How big the zones are"},
-    {IDC_EDGE, L"Edge size (px)", false, L"Default thickness of the edge strips. An edge is always clamped to the smaller of the two corners it runs between.", nullptr},
-    {IDC_CENTREPCT, L"Centre zone width (%)", false, L"How much of an edge the centre zone takes. Only affects edges where a centre action is assigned.", nullptr},
-
-    {IDC_DELAY, L"Activation delay (ms)", false, L"How long the cursor must dwell before a zone fires. 0 is immediate.", L"When a zone fires"},
-    {IDC_SETTLE, L"Pass-through guard (ms)", false, L"Stops a zone firing when you only cross it. You cannot reach a corner without crossing the edge beside it, so without this both would fire.", nullptr},
-    {IDC_KNOCK, L"Knock window (ms, 0 = off)", false, L"Require entering a zone twice in quick succession, like knocking. The strongest guard against accidental triggers.", nullptr},
-    {IDC_COOLDOWN, L"Cooldown (ms)", false, L"Minimum gap before the same zone can fire again.", nullptr},
-    {IDC_MODIFIER, L"Require modifier", false, L"Zones stay inert unless this key is held. Individual zones can override it.", nullptr},
-
-    {IDC_EXCLUDED, L"Excluded processes", false, L"Semicolon-separated executable names. While one of them is in the foreground, no zone fires. Example: photoshop.exe;blender.exe", L"When to stay out of the way"},
-    {IDC_CB_FULLSCREEN, L"Skip while an app is fullscreen", true, L"Ignore zones while a game or video is fullscreen - on that display only, so a game on one screen no longer disables the others. Shell surfaces such as Task View and Start do not count.", nullptr},
-    {IDC_CB_DRAG, L"Skip while dragging the mouse", true, L"Ignore zones while any mouse button is held, so dragging a window into a corner does not trigger it.", nullptr},
-    {IDC_CB_TASKBAR, L"Keep zones off the taskbar", true, L"Build zones from the desktop work area, so they stop at the taskbar instead of fighting its peek-at-desktop strip.", nullptr},
-
-    {IDC_LOCKBLANK, L"Blank delay after lock (ms)", false, L"Only used by the Lock and Turn Off Monitors action. Locking counts as activity, so blanking too early just wakes the display.", L"Everything else"},
-    {IDC_CB_MONNAMES, L"List my monitors in the log", true, L"Writes your display names to the log so they can be copied into the monitor selector.", nullptr},
-};
-static constexpr int kOptCount = ARRAYSIZE(kOpts);
-
-// DashSetInt / DashGetInt reach a control as hOpt[id - IDC_OPT_FIRST], so
-// reordering one of these two lists without the other silently writes the wrong
-// field. Cheaper to catch here than to notice as "the cooldown box edits the
-// corner size".
-static constexpr bool OptIdsMatchOrder()
-{
-    for (int i = 0; i < kOptCount; i++)
-        if (kOpts[i].id != IDC_OPT_FIRST + i)
-            return false;
-    return true;
-}
-static_assert(kOptCount == IDC_OPT_LAST - IDC_OPT_FIRST,
-              "kOpts and the DashId option range have different lengths");
-static_assert(OptIdsMatchOrder(),
-              "kOpts must list the option ids in DashId order");
-
-// The window is sized from Lay::OptionsH before kOpts is visible, so measure
-// the real page here and refuse to build if the two have drifted apart -
-// otherwise adding an option just pushes the last row under the button bar.
-static constexpr int OptionsPageH()
-{
-    int h = Lay::Pad + Lay::TabH + Lay::Gap;
-    for (const auto &o : kOpts)
+    switch (i)
     {
-        if (o.section)
-            h += Lay::SecH;
-        h += o.isCheck ? Lay::CheckH : Lay::RowH;
+    case 0: return t.size;
+    case 1: return t.delay;
+    case 2: return t.settle;
+    case 3: return t.knock;
+    case 4: return t.cooldown;
+    default: return t.modifier;
     }
-    return h;
-}
-static_assert(OptionsPageH() == Lay::OptionsH,
-              "Lay::OptionsH no longer matches kOpts");
-
-// A free function with CALLBACK, not a lambda: a non-capturing lambda decays
-// to a cdecl function pointer, while WNDENUMPROC is __stdcall. They happen to
-// be interchangeable in 64-bit builds, but this mod is compiled 32-bit where
-// the calling conventions genuinely differ, so the lambda will not convert.
-static BOOL CALLBACK DashSetChildFont(HWND hChild, LPARAM lParam)
-{
-    SendMessageW(hChild, WM_SETFONT, (WPARAM)lParam, TRUE);
-    return TRUE;
 }
 
-static void DashSetInt(DashState *s, int id, int v)
+// The global an unset field falls back to. Size is the odd one out: a corner
+// and an edge inherit different globals.
+static int GlobalField(const ModSettings &g, int i, Zone z)
 {
-    wchar_t b[32];
-    _snwprintf_s(b, _countof(b), _TRUNCATE, L"%d", v);
-    SetWindowTextW(s->hOpt[id - IDC_OPT_FIRST], b);
+    switch (i)
+    {
+    case 0: return (z <= ZONE_BOTTOM_RIGHT) ? g.cornerSize : g.edgeSize;
+    case 1: return g.activationDelay;
+    case 2: return g.settleMs;
+    case 3: return g.knockWindowMs;
+    case 4: return g.cooldownMs;
+    default: return g.requireModifier;
+    }
 }
 
-static int DashGetInt(DashState *s, int id, int fallback)
+static std::wstring FormatTuning(int i, int value)
 {
-    wchar_t b[32] = {};
-    GetWindowTextW(s->hOpt[id - IDC_OPT_FIRST], b, ARRAYSIZE(b));
-    if (!b[0])
-        return fallback;
-    return _wtoi(b);
+    wchar_t buf[64];
+    if (i == 0)
+        _snwprintf_s(buf, _countof(buf), _TRUNCATE, L"%d px", value);
+    else if (i == 5)
+    {
+        static const wchar_t *kMods[] = {L"None", L"Ctrl", L"Alt", L"Shift",
+                                         L"Win"};
+        return (value >= 0 && value < 5) ? kMods[value] : L"None";
+    }
+    else if (i == 3 && value == 0)
+        return L"off";
+    else
+        _snwprintf_s(buf, _countof(buf), _TRUNCATE, L"%d ms", value);
+    return buf;
 }
 
-static void DashLayout(HWND hWnd, DashState *s)
+// Mirrors ResolveZone: the display's own configuration first, then the
+// wildcard, decided per zone rather than per display.
+static void DashFillZones(DisplayView &dv,
+                          const std::vector<MonitorZoneConfig> &cfgs)
 {
-    UINT d = s->dpi;
-    const int pad = Sc(Lay::Pad, d), gap = Sc(Lay::Gap, d);
-    int y;
-
-    // Show only the active page. Doing this first means the button bar below
-    // is positioned against a known set of visible controls.
     for (int z = 0; z < ZONE_COUNT; z++)
     {
-        int sw = s->showZones ? SW_SHOW : SW_HIDE;
-        ShowWindow(s->hZoneLabel[z], sw);
-        ShowWindow(s->hZoneAction[z], sw);
-        ShowWindow(s->hZoneArgs[z], sw);
-    }
-    ShowWindow(s->hMonitor, s->showZones ? SW_SHOW : SW_HIDE);
-    {
-        int sw = s->showZones ? SW_SHOW : SW_HIDE;
-        ShowWindow(s->hHdrZone, sw);
-        ShowWindow(s->hHdrAction, sw);
-        ShowWindow(s->hHdrArgs, sw);
-        ShowWindow(s->hTzTitle, sw);
-        ShowWindow(s->hTzHint, sw);
-        for (int i = 0; i < kTzCount; i++)
+        const ZoneConfig *hit = nullptr;
+        // An entry that names an action but produced no executor - an
+        // unparseable key combination, or an Alternate action missing its "|".
+        // ResolveZone skips those and keeps looking, so this has to as well:
+        // marking the zone broken when the wildcard actually rescues it would
+        // be the picture disagreeing with what fires, in the one direction
+        // that matters most.
+        const ZoneConfig *broken = nullptr;
+        bool wild = false;
+        bool disabled = false;
+
+        if (!dv.wildcard)
         {
-            ShowWindow(s->hTz[i], sw);
-            ShowWindow(s->hTzLabel[i], sw);
-        }
-    }
-    for (int i = 0; i < kOptCount; i++)
-    {
-        int sw = s->showZones ? SW_HIDE : SW_SHOW;
-        ShowWindow(s->hOpt[i], sw);
-        if (s->hOptLabel[i])
-            ShowWindow(s->hOptLabel[i], sw);
-        if (s->hOptSection[i])
-            ShowWindow(s->hOptSection[i], sw);
-    }
-
-    SetWindowPos(s->hPageZones, nullptr, pad, pad, Sc(96, d), Sc(Lay::TabH, d),
-                 SWP_NOZORDER);
-    SetWindowPos(s->hPageOptions, nullptr, pad + Sc(104, d), pad, Sc(96, d),
-                 Sc(Lay::TabH, d), SWP_NOZORDER);
-
-    y = pad + Sc(Lay::TabH, d) + gap;
-
-    if (s->showZones)
-    {
-        SetWindowPos(s->hMonitor, nullptr, pad, y,
-                     Sc(Lay::LblW + Lay::Gap + Lay::CmbW, d), Sc(320, d),
-                     SWP_NOZORDER);
-        y += Sc(Lay::CtlH, d) + gap;
-
-        // Column headers
-        SetWindowPos(s->hHdrZone, nullptr, pad, y, Sc(Lay::LblW, d),
-                     Sc(18, d), SWP_NOZORDER);
-        SetWindowPos(s->hHdrAction, nullptr, pad + Sc(Lay::LblW + Lay::Gap, d),
-                     y, Sc(Lay::CmbW, d), Sc(18, d), SWP_NOZORDER);
-        SetWindowPos(s->hHdrArgs, nullptr,
-                     pad + Sc(Lay::LblW + Lay::Gap + Lay::CmbW + Lay::Gap, d), y,
-                     Sc(Lay::ArgW, d), Sc(18, d), SWP_NOZORDER);
-        y += Sc(Lay::HdrH, d);
-
-        for (int z = 0; z < ZONE_COUNT; z++)
-        {
-            int rowY = y + z * Sc(Lay::RowH, d);
-            SetWindowPos(s->hZoneLabel[z], nullptr, pad, rowY + Sc(5, d),
-                         Sc(Lay::LblW, d), Sc(20, d), SWP_NOZORDER);
-            SetWindowPos(s->hZoneAction[z], nullptr,
-                         pad + Sc(Lay::LblW + Lay::Gap, d), rowY,
-                         Sc(Lay::CmbW, d), Sc(320, d), SWP_NOZORDER);
-            SetWindowPos(s->hZoneArgs[z], nullptr,
-                         pad + Sc(Lay::LblW + Lay::Gap + Lay::CmbW + Lay::Gap, d),
-                         rowY, Sc(Lay::ArgW, d), Sc(Lay::CtlH, d), SWP_NOZORDER);
-        }
-    }
-    else
-    {
-        for (int i = 0; i < kOptCount; i++)
-        {
-            if (s->hOptSection[i])
+            for (const auto &cfg : cfgs)
             {
-                SetWindowPos(s->hOptSection[i], nullptr, pad, y + Sc(8, d),
-                             Sc(Lay::OptLblW + Lay::Gap + Lay::OptCtlW, d),
-                             Sc(20, d), SWP_NOZORDER);
-                y += Sc(Lay::SecH, d);
-            }
-            if (kOpts[i].isCheck)
-            {
-                SetWindowPos(s->hOpt[i], nullptr, pad, y,
-                             Sc(Lay::OptLblW + Lay::Gap + Lay::OptCtlW, d),
-                             Sc(22, d), SWP_NOZORDER);
-                y += Sc(Lay::CheckH, d);
-            }
-            else
-            {
-                SetWindowPos(s->hOptLabel[i], nullptr, pad, y + Sc(5, d),
-                             Sc(Lay::OptLblW, d), Sc(20, d), SWP_NOZORDER);
-                bool combo = (kOpts[i].id == IDC_MODIFIER);
-                bool wide = (kOpts[i].id == IDC_EXCLUDED);
-                SetWindowPos(s->hOpt[i], nullptr,
-                             pad + Sc(Lay::OptLblW + Lay::Gap, d), y,
-                             Sc(wide ? Lay::OptCtlW + Lay::DiagW : Lay::OptCtlW, d),
-                             combo ? Sc(200, d) : Sc(Lay::CtlH, d), SWP_NOZORDER);
-                y += Sc(Lay::RowH, d);
+                if (cfg.monitorId.empty() || cfg.monitorId == L"*")
+                    continue;
+                if (_wcsicmp(cfg.monitorId.c_str(), dv.id.c_str()) != 0)
+                    continue;
+                const ZoneConfig &zc = cfg.zones[z];
+                if (zc.action == CornerAction::DisabledHere)
+                {
+                    disabled = true;
+                    break;
+                }
+                if (zc.action == CornerAction::Nothing)
+                    continue;
+                if (zc.executor)
+                {
+                    hit = &zc;
+                    break;
+                }
+                if (!broken)
+                    broken = &zc;
             }
         }
-    }
 
-    if (s->showZones)
-    {
-        RECT dg = DashDiagramRect(d);
-        int px = dg.left;
-        int py = dg.bottom + Sc(14, d);
-        int pw = dg.right - dg.left;
-        SetWindowPos(s->hTzTitle, nullptr, px, py, pw, Sc(18, d), SWP_NOZORDER);
-        py += Sc(20, d);
-        SetWindowPos(s->hTzHint, nullptr, px, py, pw, Sc(16, d), SWP_NOZORDER);
-        py += Sc(20, d);
-        int lw = Sc(96, d);
-        for (int i = 0; i < kTzCount; i++)
+        if (!hit && !disabled)
         {
-            SetWindowPos(s->hTzLabel[i], nullptr, px, py + Sc(4, d), lw,
-                         Sc(18, d), SWP_NOZORDER);
-            bool combo = (kTz[i].id == IDC_TZ_MODIFIER);
-            SetWindowPos(s->hTz[i], nullptr, px + lw + Sc(6, d), py,
-                         pw - lw - Sc(6, d), combo ? Sc(180, d) : Sc(22, d),
-                         SWP_NOZORDER);
-            py += Sc(Lay::TzRowH, d);
+            for (const auto &cfg : cfgs)
+            {
+                if (cfg.monitorId != L"*")
+                    continue;
+                const ZoneConfig &zc = cfg.zones[z];
+                if (zc.action == CornerAction::Nothing ||
+                    zc.action == CornerAction::DisabledHere)
+                    continue;
+                if (zc.executor)
+                {
+                    hit = &zc;
+                    wild = !dv.wildcard;
+                    break;
+                }
+                if (!broken)
+                    broken = &zc;
+            }
         }
+
+        if (disabled)
+        {
+            dv.zones[z].action = CornerAction::DisabledHere;
+            dv.configured++;
+            continue;
+        }
+
+        // Nothing resolved, so the unparseable entry really is what the user
+        // gets - nothing at all. That is worth saying out loud.
+        if (!hit)
+        {
+            if (!broken)
+                continue;
+            hit = broken;
+            dv.zones[z].invalid = true;
+        }
+
+        dv.zones[z].action = hit->action;
+        dv.zones[z].args = hit->args;
+        dv.zones[z].tuning = hit->tuning;
+        dv.zones[z].fromWildcard = wild;
+        dv.zones[z].releaseAction = hit->releaseAction;
+        dv.zones[z].releaseArgs = hit->releaseArgs;
+        dv.configured++;
     }
-
-    // Button bar sits below the taller of the two pages, always, so it can
-    // never land on top of a control.
-    RECT rc;
-    GetClientRect(hWnd, &rc);
-    int by = rc.bottom - pad - Sc(Lay::BtnH, d);
-    int bx = pad;
-    SetWindowPos(s->hSave, nullptr, bx, by, Sc(130, d), Sc(Lay::BtnH, d),
-                 SWP_NOZORDER);
-    bx += Sc(130 + Lay::Gap, d);
-    SetWindowPos(s->hCancel, nullptr, bx, by, Sc(90, d), Sc(Lay::BtnH, d),
-                 SWP_NOZORDER);
-    bx += Sc(90 + Lay::Gap, d);
-    SetWindowPos(s->hReset, nullptr, bx, by, Sc(210, d), Sc(Lay::BtnH, d),
-                 SWP_NOZORDER);
-
-    InvalidateRect(hWnd, nullptr, TRUE);
 }
 
-// Screen preview: a rectangle with the twelve zones drawn where they actually
-// sit, filled when something is assigned to them. Clicking one jumps to its
-// row, which is far quicker than reading down a list of twelve labels.
-static void DashPaintDiagram(HWND hWnd, DashState *s, HDC hdc)
+static void DashBuildSnapshot(DashState *s)
 {
-    if (!s->showZones)
-        return;
+    s->displays.clear();
+    s->tabRects.clear();
 
+    // Attached displays, with their geometry, come from the published zone
+    // snapshot - g_monitors belongs to the detection thread, which clears and
+    // refills it underneath anyone else.
+    std::shared_ptr<const ZoneSet> snap;
+    EnterCriticalSection(&g_zonesLock);
+    snap = g_zones;
+    LeaveCriticalSection(&g_zonesLock);
+
+    std::vector<MonitorZoneConfig> cfgs;
+    {
+        EnterCriticalSection(&g_settingsLock);
+        // One deep copy, not two. Copying g_settings already duplicates every
+        // configuration - each with its std::function executors and strings -
+        // so take the copy and then steal that vector out of it, rather than
+        // copying monitorConfigs separately and clearing the duplicate
+        // afterwards. The detection thread can be waiting on this lock inside
+        // BuildZoneSet, and the second pass was paid for with its latency.
+        s->globals = g_settings;
+        cfgs = std::move(s->globals.monitorConfigs);
+        LeaveCriticalSection(&g_settingsLock);
+    }
+    s->globals.monitorConfigs.clear();   // moved-from, but say so explicitly
+
+    if (snap)
+    {
+        for (const auto &m : snap->monitors)
+        {
+            DisplayView dv;
+            dv.id = m.id;
+            dv.width = m.width;
+            dv.height = m.height;
+            dv.workWidth = m.workWidth;
+            dv.workHeight = m.workHeight;
+            dv.primary = m.primary;
+            dv.present = true;
+            DashFillZones(dv, cfgs);
+            s->displays.push_back(std::move(dv));
+        }
+    }
+
+    // A configuration for a display that is not plugged in right now is still
+    // real and still worth seeing, so it gets a tab of its own.
+    for (const auto &cfg : cfgs)
+    {
+        if (cfg.monitorId.empty() || cfg.monitorId == L"*")
+            continue;
+        bool known = false;
+        for (const auto &dv : s->displays)
+            if (_wcsicmp(dv.id.c_str(), cfg.monitorId.c_str()) == 0)
+                known = true;
+        if (known)
+            continue;
+
+        DisplayView dv;
+        dv.id = cfg.monitorId;
+        dv.present = false;
+        DashFillZones(dv, cfgs);
+        s->displays.push_back(std::move(dv));
+    }
+
+    for (const auto &cfg : cfgs)
+    {
+        if (cfg.monitorId != L"*")
+            continue;
+        DisplayView dv;
+        dv.id = L"All displays";
+        dv.wildcard = true;
+        DashFillZones(dv, cfgs);
+        s->displays.push_back(std::move(dv));
+        break;
+    }
+
+    if (s->activeTab >= (int)s->displays.size())
+        s->activeTab = 0;
+}
+
+// =====================================================================
+// Painting
+// =====================================================================
+
+// Trims a label to fit `maxPx` along the baseline, ending in an ellipsis.
+// Returns false when not even the ellipsis fits, so the caller can skip the
+// label rather than draw a fragment of one.
+static bool FitLabel(HDC hdc, std::wstring &s, int maxPx)
+{
+    SIZE sz = {};
+    GetTextExtentPoint32W(hdc, s.c_str(), (int)s.size(), &sz);
+    if (sz.cx <= maxPx)
+        return true;
+
+    static const wchar_t kEllipsis[] = L"…";
+    SIZE es = {};
+    GetTextExtentPoint32W(hdc, kEllipsis, 1, &es);
+    if (es.cx > maxPx)
+        return false;
+
+    while (!s.empty())
+    {
+        s.pop_back();
+        std::wstring t = s + kEllipsis;
+        GetTextExtentPoint32W(hdc, t.c_str(), (int)t.size(), &sz);
+        if (sz.cx <= maxPx)
+        {
+            s = t;
+            return true;
+        }
+    }
+    return false;
+}
+
+static HFONT DashMakeFont(UINT dpi, int pt, bool bold, int escapement)
+{
+    LOGFONTW lf = {};
+    lf.lfHeight = -Sc(pt, dpi);
+    lf.lfWeight = bold ? FW_SEMIBOLD : FW_NORMAL;
+    lf.lfCharSet = DEFAULT_CHARSET;
+    lf.lfQuality = CLEARTYPE_QUALITY;
+    lf.lfEscapement = escapement;
+    lf.lfOrientation = escapement;
+    wcscpy_s(lf.lfFaceName, LF_FACESIZE, L"Segoe UI");
+    return CreateFontIndirectW(&lf);
+}
+
+static void DashPaintTabs(DashState *s, HDC hdc, const RECT &client)
+{
     UINT d = s->dpi;
-    RECT dg = DashDiagramRect(d);
+    s->tabRects.clear();
+
+    int x = Sc(Lay::Pad, d);
+    int top = Sc(Lay::Pad, d);
+    int h = Sc(Lay::TabH, d);
+    const int strip = client.right - Sc(Lay::Pad, d) * 2;
+    const int n = (int)s->displays.size();
 
     HFONT old = (HFONT)SelectObject(hdc, s->hFont);
     SetBkMode(hdc, TRANSPARENT);
-    SetTextColor(hdc, g_pal.dim);
-    RECT cap = {dg.left, dg.top - Sc(20, d), dg.right, dg.top - Sc(2, d)};
-    DrawTextW(hdc, L"Your screen — click a zone to jump to it", -1, &cap,
-              DT_LEFT | DT_SINGLELINE);
 
-    HBRUSH screenBrush = CreateSolidBrush(RGB(24, 24, 24));
-    FillRect(hdc, &dg, screenBrush);
-    DeleteObject(screenBrush);
+    // Natural widths first. Laid out unbounded, four or five displays - or two
+    // long EDID names plus the wildcard tab - ran off the right edge, and the
+    // tabs past it were drawn outside the window and unreachable by mouse.
+    // Nothing here scrolls, so instead every tab is capped at an equal share
+    // and its label ellipsised; the badge and the dot always survive.
+    std::vector<int> width((size_t)n, 0);
+    int total = 0;
+    for (int i = 0; i < n; i++)
+    {
+        const DisplayView &dv = s->displays[i];
+        wchar_t count[16];
+        _snwprintf_s(count, _countof(count), _TRUNCATE, L"%d", dv.configured);
 
-    HPEN pen = CreatePen(PS_SOLID, Sc(1, d), RGB(90, 90, 90));
+        SIZE ts = {}, cs = {};
+        SelectObject(hdc, i == s->activeTab ? s->hFontBold : s->hFont);
+        GetTextExtentPoint32W(hdc, dv.id.c_str(), (int)dv.id.size(), &ts);
+        SelectObject(hdc, s->hFontSmall);
+        GetTextExtentPoint32W(hdc, count, (int)wcslen(count), &cs);
+
+        int dot = dv.present ? 0 : Sc(14, d);
+        width[(size_t)i] =
+            Sc(12, d) + dot + ts.cx + Sc(8, d) + cs.cx + Sc(12, d) + Sc(12, d);
+        total += width[(size_t)i];
+    }
+
+    const int cap = (n > 0 && total > strip) ? strip / n : 0;
+
+    for (int i = 0; i < n; i++)
+    {
+        const DisplayView &dv = s->displays[i];
+        bool active = (i == s->activeTab);
+
+        wchar_t count[16];
+        _snwprintf_s(count, _countof(count), _TRUNCATE, L"%d", dv.configured);
+
+        SIZE ts = {}, cs = {};
+        SelectObject(hdc, active ? s->hFontBold : s->hFont);
+        GetTextExtentPoint32W(hdc, dv.id.c_str(), (int)dv.id.size(), &ts);
+        SelectObject(hdc, s->hFontSmall);
+        GetTextExtentPoint32W(hdc, count, (int)wcslen(count), &cs);
+
+        int dot = dv.present ? 0 : Sc(14, d);
+        int badge = cs.cx + Sc(12, d);
+        int wTab = width[(size_t)i];
+        if (cap > 0 && wTab > cap)
+            wTab = cap;
+
+        RECT tr = {x, top, x + wTab, top + h};
+        s->tabRects.push_back(tr);
+
+        int tx = tr.left + Sc(12, d);
+
+        // A saved configuration for a display that is not plugged in is not an
+        // error, but it should not read as live either.
+        if (!dv.present)
+        {
+            int r = Sc(3, d);
+            int cy = tr.top + h / 2;
+            HBRUSH db = CreateSolidBrush(g_pal.dim);
+            RECT dr = {tx, cy - r, tx + 2 * r, cy + r};
+            FillRect(hdc, &dr, db);
+            DeleteObject(db);
+            tx += dot;
+        }
+
+        // The badge is reserved out of the label's space rather than pushed
+        // off the end, so a truncated tab still shows its count.
+        int labelRight = tr.right - Sc(12, d) - badge - Sc(8, d);
+        if (labelRight < tx)
+            labelRight = tx;
+        SelectObject(hdc, active ? s->hFontBold : s->hFont);
+        SetTextColor(hdc, active ? g_pal.text : g_pal.dim);
+        RECT lr = {tx, tr.top, labelRight, tr.bottom};
+        DrawTextW(hdc, dv.id.c_str(), -1, &lr,
+                  DT_LEFT | DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
+        tx = labelRight + Sc(8, d);
+
+        // Configured-zone count, so "have I set anything up on that screen?"
+        // is answerable without clicking through.
+        RECT br = {tx, tr.top + h / 2 - Sc(9, d), tx + badge,
+                   tr.top + h / 2 + Sc(9, d)};
+        HBRUSH bb = CreateSolidBrush(active ? g_pal.accent : g_pal.field);
+        FillRect(hdc, &br, bb);
+        DeleteObject(bb);
+        SelectObject(hdc, s->hFontSmall);
+        SetTextColor(hdc, active ? g_pal.accentText : g_pal.dim);
+        DrawTextW(hdc, count, -1, &br, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
+
+        if (active)
+        {
+            RECT ul = {tr.left + Sc(8, d), tr.bottom - Sc(2, d),
+                       tr.right - Sc(8, d), tr.bottom};
+            HBRUSH ab = CreateSolidBrush(g_pal.accent);
+            FillRect(hdc, &ul, ab);
+            DeleteObject(ab);
+        }
+
+        x += wTab;
+    }
+
+    // Hairline under the whole strip.
+    RECT sep = {Sc(Lay::Pad, d), top + h, client.right - Sc(Lay::Pad, d),
+                top + h + Sc(1, d)};
+    HBRUSH sb = CreateSolidBrush(g_pal.border);
+    FillRect(hdc, &sep, sb);
+    DeleteObject(sb);
+
+    SelectObject(hdc, old);
+}
+
+static void DashPaintDiagram(DashState *s, HDC hdc)
+{
+    UINT d = s->dpi;
+    RECT dg = DashDiagramRect(s);
+
+    HFONT old = (HFONT)SelectObject(hdc, s->hFont);
+    SetBkMode(hdc, TRANSPARENT);
+
+    HBRUSH screen = CreateSolidBrush(g_pal.field);
+    FillRect(hdc, &dg, screen);
+    DeleteObject(screen);
+
+    HPEN pen = CreatePen(PS_SOLID, Sc(1, d), g_pal.border);
     HPEN oldPen = (HPEN)SelectObject(hdc, pen);
     HBRUSH hollow = (HBRUSH)GetStockObject(NULL_BRUSH);
     HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, hollow);
@@ -3974,380 +4866,408 @@ static void DashPaintDiagram(HWND hWnd, DashState *s, HDC hdc)
     SelectObject(hdc, oldPen);
     DeleteObject(pen);
 
-    HBRUSH set = CreateSolidBrush(RGB(76, 194, 255));
-    HBRUSH unset = CreateSolidBrush(RGB(58, 58, 58));
-    HBRUSH sel = CreateSolidBrush(RGB(255, 190, 80));
+    if (s->displays.empty())
+    {
+        SetTextColor(hdc, g_pal.dim);
+        RECT t = dg;
+        DrawTextW(hdc,
+                  L"No displays are configured.\n\n"
+                  L"Open this mod's Settings page in Windhawk, add a display, "
+                  L"then add the zones you want on it.",
+                  -1, &t, DT_CENTER | DT_WORDBREAK | DT_EDITCONTROL);
+        SelectObject(hdc, old);
+        return;
+    }
+
+    const DisplayView &dv = s->displays[s->activeTab];
+
+    HBRUSH set = CreateSolidBrush(g_pal.accent);
+    HBRUSH unset = CreateSolidBrush(g_pal.border);
+    HBRUSH hot = CreateSolidBrush(g_lightTheme ? RGB(0, 70, 140)
+                                               : RGB(120, 215, 255));
+    // A zone that is configured but cannot fire needs to look wrong at a
+    // glance, not merely be explained in the panel below.
+    HBRUSH broken = CreateSolidBrush(g_lightTheme ? RGB(176, 60, 40)
+                                                  : RGB(220, 110, 90));
 
     for (int z = 0; z < ZONE_COUNT; z++)
     {
-        int idx = (int)SendMessageW(s->hZoneAction[z], CB_GETCURSEL, 0, 0);
-        HBRUSH b = (z == s->hoverZone) ? sel : (idx > 0 ? set : unset);
-        int parts = ZoneHasTwoParts((Zone)z) ? 2 : 1;
-        for (int p = 0; p < parts; p++)
+        const ZoneView &zv = dv.zones[z];
+        bool on = zv.action != CornerAction::Nothing;
+        bool live = (z == s->hoverZone || z == s->selZone);
+        HBRUSH b = live ? hot : (zv.invalid ? broken : (on ? set : unset));
+
+        RECT widest = ZoneRectInDiagram((Zone)z, dg);
+        if (widest.right <= widest.left || widest.bottom <= widest.top)
+            continue;
+        FillRect(hdc, &widest, b);
+
+        if (!on)
+            continue;
+
+        SetTextColor(hdc, live ? (g_lightTheme ? RGB(255, 255, 255)
+                                               : RGB(0, 0, 0))
+                               : g_pal.accentText);
+
+        const wchar_t *name = ActionToString(zv.action);
+
+        if (ZoneIsVertical((Zone)z))
         {
-            RECT r = ZoneRectInDiagram((Zone)z, dg, p == 1);
-            if (r.right > r.left && r.bottom > r.top)
-                FillRect(hdc, &r, b);
+            // A rotated font draws from a baseline rather than into a rect, so
+            // the text is measured and placed by hand - DT_END_ELLIPSIS does
+            // not apply to a font with escapement, and clipping the overflow
+            // instead left half a glyph hard against the next segment's half
+            // glyph, which read as two labels overlapping.
+            SelectObject(hdc, s->hFontVert);
+            int pad = Sc(6, d);
+            int room = (widest.bottom - widest.top) - pad * 2;
+            std::wstring lab = name;
+            if (room > 0 && FitLabel(hdc, lab, room))
+            {
+                SIZE ts = {};
+                GetTextExtentPoint32W(hdc, lab.c_str(), (int)lab.size(), &ts);
+                int cx = (widest.left + widest.right) / 2;
+                int cy = (widest.top + widest.bottom) / 2;
+                IntersectClipRect(hdc, widest.left, widest.top, widest.right,
+                                  widest.bottom);
+                // At 90 degrees the advance runs up the screen and the glyphs
+                // hang to the *right* of the baseline, so the baseline sits at
+                // the left of the band and the run starts at its bottom.
+                // Getting this backwards puts the whole label outside its own
+                // strip, where the clip rect shears it in half and it reads as
+                // two labels colliding. Rendered rather than reasoned about:
+                TextOutW(hdc, cx - ts.cy / 2, cy + ts.cx / 2, lab.c_str(),
+                         (int)lab.size());
+                SelectClipRgn(hdc, nullptr);
+            }
+        }
+        else
+        {
+            SelectObject(hdc, s->hFontSmall);
+            RECT t = widest;
+            InflateRect(&t, -Sc(3, d), -Sc(2, d));
+            // Corners are square and small, so a long name wraps and then
+            // clips; edges are wide and short, so they ellipsise on one line.
+            DrawTextW(hdc, name, -1, &t,
+                      ZoneIsCorner((Zone)z)
+                          ? (DT_CENTER | DT_WORDBREAK | DT_EDITCONTROL)
+                          : (DT_CENTER | DT_SINGLELINE | DT_VCENTER |
+                             DT_END_ELLIPSIS));
         }
     }
 
     DeleteObject(set);
     DeleteObject(unset);
-    DeleteObject(sel);
+    DeleteObject(hot);
+    DeleteObject(broken);
 
-    // No hover card. It used to be drawn from dg.bottom+10 to
-    // dg.bottom+112 — the exact strip the per-zone panel's controls occupy, so
-    // it was never readable and its leftovers showed through the gaps between
-    // the fields. The panel below already shows the same numbers for the
-    // selected zone, and clicking a zone in the preview selects it.
+    // Caption under the box.
+    SelectObject(hdc, s->hFontSmall);
+    SetTextColor(hdc, g_pal.dim);
+    wchar_t cap[160];
+    if (dv.wildcard)
+        wcscpy_s(cap, _countof(cap),
+                       L"Applies to any display without its own configuration");
+    else if (!dv.present)
+        _snwprintf_s(cap, _countof(cap), _TRUNCATE, L"%s  -  not connected",
+                     dv.id.c_str());
+    else
+        _snwprintf_s(cap, _countof(cap), _TRUNCATE, L"%d x %d%s", dv.width,
+                     dv.height, dv.primary ? L"  -  primary" : L"");
+
+    RECT cr = {DashDiagramArea(d).left, dg.bottom + Sc(4, d),
+               DashDiagramArea(d).right, dg.bottom + Sc(Lay::DiagCapH, d)};
+    DrawTextW(hdc, cap, -1, &cr, DT_CENTER | DT_SINGLELINE);
 
     SelectObject(hdc, old);
 }
-// Fills the zone controls from whichever configuration slot is selected.
-// Pushes the selected zone's overrides into the six panel fields.
-static void DashShowZoneTuning(DashState *s)
+
+static void DashPaintDetail(DashState *s, HDC hdc, const RECT &client)
 {
-    const ZoneTuning &tn = s->tuning[s->selZone];
-    auto put = [&](int id, int v)
+    UINT d = s->dpi;
+    int left = Sc(Lay::Pad, d);
+    int right = client.right - Sc(Lay::Pad, d);
+    int top = Sc(Lay::Pad + Lay::TabH + Lay::Gap + Lay::DiagAreaH +
+                     Lay::DiagCapH + Lay::Gap,
+                 d);
+
+    HFONT old = (HFONT)SelectObject(hdc, s->hFont);
+    SetBkMode(hdc, TRANSPARENT);
+
+    RECT sep = {left, top, right, top + Sc(1, d)};
+    HBRUSH sb = CreateSolidBrush(g_pal.border);
+    FillRect(hdc, &sep, sb);
+    DeleteObject(sb);
+
+    int y = top + Sc(10, d);
+    // Hover wins while the pointer is over a zone; a click pins one so the
+    // panel still reads once the pointer moves away.
+    int zone = (s->hoverZone >= 0) ? s->hoverZone : s->selZone;
+
+    if (s->displays.empty() || zone < 0)
     {
-        wchar_t b[24] = L"";
-        if (v >= 0)
-            _snwprintf_s(b, _countof(b), _TRUNCATE, L"%d", v);
-        SetWindowTextW(s->hTz[id - IDC_TZ_FIRST], b);
-    };
-    put(IDC_TZ_SIZE, tn.size);
-    put(IDC_TZ_DELAY, tn.delay);
-    put(IDC_TZ_SETTLE, tn.settle);
-    put(IDC_TZ_KNOCK, tn.knock);
-    put(IDC_TZ_COOLDOWN, tn.cooldown);
-    SendMessageW(s->hTz[IDC_TZ_MODIFIER - IDC_TZ_FIRST], CB_SETCURSEL,
-                 tn.modifier < 0 ? 0 : tn.modifier + 1, 0);
-
-    std::wstring title =
-        std::wstring(L"Settings for ") + ZoneToString((Zone)s->selZone);
-    SetWindowTextW(s->hTzTitle, title.c_str());
-}
-
-// Reads the six panel fields back into the selected zone. Blank stays -1,
-// which is what "inherit the global value" is stored as.
-static void DashCaptureZoneTuning(DashState *s)
-{
-    ZoneTuning &tn = s->tuning[s->selZone];
-    auto get = [&](int id) -> int
-    {
-        wchar_t b[24] = {};
-        GetWindowTextW(s->hTz[id - IDC_TZ_FIRST], b, ARRAYSIZE(b));
-        if (!b[0])
-            return -1;
-        return _wtoi(b);
-    };
-    tn.size = get(IDC_TZ_SIZE);
-    tn.delay = get(IDC_TZ_DELAY);
-    tn.settle = get(IDC_TZ_SETTLE);
-    tn.knock = get(IDC_TZ_KNOCK);
-    tn.cooldown = get(IDC_TZ_COOLDOWN);
-    int m = (int)SendMessageW(s->hTz[IDC_TZ_MODIFIER - IDC_TZ_FIRST],
-                              CB_GETCURSEL, 0, 0);
-    tn.modifier = (m <= 0) ? -1 : m - 1;
-}
-
-// The monitor name a combo entry stands for. Entry 0 is the wildcard.
-static std::wstring DashSlotMonitorId(DashState *s, int index)
-{
-    if (index <= 0)
-        return L"*";
-    wchar_t buf[256] = {};
-    if (SendMessageW(s->hMonitor, CB_GETLBTEXT, index, (LPARAM)buf) == CB_ERR)
-        return L"";
-    return buf;
-}
-
-// Reads persistence into a slot, once. Everything after that comes from the
-// in-memory copy, so an edit is never re-read over.
-static void DashFillSlotFromStore(DashState *s, int index)
-{
-    if (index < 0 || index >= (int)s->slots.size() || s->slots[index].loaded)
+        SelectObject(hdc, s->hFontSmall);
+        SetTextColor(hdc, g_pal.dim);
+        RECT r = {left, y, right, y + Sc(40, d)};
+        DrawTextW(hdc,
+                  s->displays.empty()
+                      ? L"Nothing to show yet."
+                      : L"Hover or click a zone to see its action and the "
+                        L"settings actually in effect for it.",
+                  -1, &r, DT_LEFT | DT_WORDBREAK);
+        SelectObject(hdc, old);
         return;
-
-    DashState::Slot &sl = s->slots[index];
-    sl.loaded = true;
-
-    // The value store is the only place a zone can come from now. The old
-    // second source - seeding from the Windhawk settings page - went with the
-    // page itself, and with it the bug where the seed was picked by combo
-    // position instead of by monitor, so one display's configuration showed up
-    // under "All monitors" and then fired on every display.
-    //
-    // Which group to read is decided by name in DashLoad, never by the combo
-    // position: the combo is ordered primary-first then left to right, so
-    // unplugging a display or promoting another to primary renumbers it.
-    const int g = sl.store;
-    if (g < 0)
-        return;   // nothing saved for this display; the Slot defaults stand
-
-    for (int z = 0; z < ZONE_COUNT; z++)
-    {
-        std::wstring act = GetStrValue(GuiKey(g, z, L"a").c_str());
-
-        sl.action[z] = 0;
-        for (int a = 0; a < kActionCount; a++)
-        {
-            if (act == kActionIds[a])
-            {
-                sl.action[z] = a;
-                break;
-            }
-        }
-        sl.args[z] = GetStrValue(GuiKey(g, z, L"g").c_str());
-
-        ZoneTuning &tn = sl.tuning[z];
-        tn.size = Wh_GetIntValue(GuiKey(g, z, L"sz").c_str(), -1);
-        tn.delay = Wh_GetIntValue(GuiKey(g, z, L"dl").c_str(), -1);
-        tn.settle = Wh_GetIntValue(GuiKey(g, z, L"gd").c_str(), -1);
-        tn.knock = Wh_GetIntValue(GuiKey(g, z, L"kn").c_str(), -1);
-        tn.cooldown = Wh_GetIntValue(GuiKey(g, z, L"cd").c_str(), -1);
-        tn.modifier = Wh_GetIntValue(GuiKey(g, z, L"md").c_str(), -1);
     }
-}
 
-// Controls -> the slot they were showing.
-static void DashCaptureSlot(DashState *s)
-{
-    if (s->cfgIndex < 0 || s->cfgIndex >= (int)s->slots.size())
+    const DisplayView &dv = s->displays[s->activeTab];
+    const ZoneView &zv = dv.zones[zone];
+
+    SelectObject(hdc, s->hFontBold);
+    SetTextColor(hdc, g_pal.text);
+    RECT r = {left, y, right, y + Sc(18, d)};
+    DrawTextW(hdc, ZoneToString((Zone)zone), -1, &r, DT_LEFT | DT_SINGLELINE);
+    y += Sc(19, d);
+
+    SelectObject(hdc, s->hFontSmall);
+    SetTextColor(hdc, g_pal.dim);
+    wchar_t line[512];
+    if (zv.action == CornerAction::Nothing)
+    {
+        wcscpy_s(line, _countof(line),
+                       L"Not set - this zone does nothing.");
+    }
+    else if (zv.action == CornerAction::AlternateKeypress ||
+             zv.action == CornerAction::AlternateCommand)
+    {
+        std::wstring a, b;
+        if (SplitAlternate(zv.args, a, b))
+            _snwprintf_s(line, _countof(line), _TRUNCATE,
+                         L"%s - alternates between  %s  and  %s",
+                         ActionToString(zv.action), a.c_str(), b.c_str());
+        else
+            _snwprintf_s(line, _countof(line), _TRUNCATE,
+                         L"%s - needs two halves separated by |",
+                         ActionToString(zv.action));
+    }
+    else if (!zv.args.empty())
+    {
+        _snwprintf_s(line, _countof(line), _TRUNCATE, L"%s  -  %s",
+                     ActionToString(zv.action), zv.args.c_str());
+    }
+    else
+    {
+        wcscpy_s(line, _countof(line), ActionToString(zv.action));
+    }
+    r = {left, y, right, y + Sc(18, d)};
+    DrawTextW(hdc, line, -1, &r, DT_LEFT | DT_SINGLELINE | DT_END_ELLIPSIS);
+    y += Sc(18, d);
+
+    if (zv.invalid)
+    {
+        SetTextColor(hdc, g_lightTheme ? RGB(176, 60, 40) : RGB(220, 110, 90));
+        r = {left, y, right, y + Sc(16, d)};
+        DrawTextW(hdc,
+                  L"This zone will not fire - its arguments could not be read.",
+                  -1, &r, DT_LEFT | DT_SINGLELINE | DT_END_ELLIPSIS);
+        SetTextColor(hdc, g_pal.dim);
+    }
+    else if (zv.releaseAction != CornerAction::Nothing)
+    {
+        wchar_t hold[256];
+        // "again" is only true when the release repeats the entry. With a
+        // different release action it read as though that action was the
+        // entry - "runs Mute again" on a zone that opens Quick Settings.
+        if (zv.releaseAction == CornerAction::SameAsEntry)
+            _snwprintf_s(hold, _countof(hold), _TRUNCATE,
+                         L"Held: runs %s again when the pointer leaves",
+                         ActionToString(zv.action));
+        else
+            _snwprintf_s(hold, _countof(hold), _TRUNCATE,
+                         L"Held: runs %s when the pointer leaves",
+                         ActionToString(zv.releaseAction));
+        r = {left, y, right, y + Sc(16, d)};
+        DrawTextW(hdc, hold, -1, &r,
+                  DT_LEFT | DT_SINGLELINE | DT_END_ELLIPSIS);
+    }
+    else if (zv.fromWildcard)
+    {
+        r = {left, y, right, y + Sc(16, d)};
+        DrawTextW(hdc, L"Inherited from the \"All displays\" configuration", -1,
+                  &r, DT_LEFT | DT_SINGLELINE);
+    }
+    y += Sc(19, d);
+
+    if (zv.action == CornerAction::Nothing)
+    {
+        SelectObject(hdc, old);
         return;
-
-    DashCaptureZoneTuning(s);
-    DashState::Slot &sl = s->slots[s->cfgIndex];
-    for (int z = 0; z < ZONE_COUNT; z++)
-    {
-        sl.action[z] =
-            (int)SendMessageW(s->hZoneAction[z], CB_GETCURSEL, 0, 0);
-        if (sl.action[z] < 0)
-            sl.action[z] = 0;
-        wchar_t buf[512] = {};
-        GetWindowTextW(s->hZoneArgs[z], buf, ARRAYSIZE(buf));
-        sl.args[z] = buf;
-        sl.tuning[z] = s->tuning[z];
     }
-    sl.loaded = true;
-}
 
-// The slot -> the controls.
-static void DashShowSlot(DashState *s)
-{
-    if (s->cfgIndex < 0 || s->cfgIndex >= (int)s->slots.size())
-        return;
+    // Column headings.
+    int cLabel = left;
+    int cValue = left + Sc(190, d);
+    int cFrom = left + Sc(300, d);
 
-    const DashState::Slot &sl = s->slots[s->cfgIndex];
-    for (int z = 0; z < ZONE_COUNT; z++)
+    SetTextColor(hdc, g_pal.dim);
+    r = {cLabel, y, cValue, y + Sc(16, d)};
+    DrawTextW(hdc, L"SETTING", -1, &r, DT_LEFT | DT_SINGLELINE);
+    r = {cValue, y, cFrom, y + Sc(16, d)};
+    DrawTextW(hdc, L"IN EFFECT", -1, &r, DT_LEFT | DT_SINGLELINE);
+    r = {cFrom, y, right, y + Sc(16, d)};
+    DrawTextW(hdc, L"FROM", -1, &r, DT_LEFT | DT_SINGLELINE);
+    y += Sc(Lay::DetHdrH, d);
+
+    // A zone silently inherits five numbers. Showing which ones were
+    // overridden is the whole point of the panel - "why did this one fire
+    // late?" was previously unanswerable without reading the store by hand.
+    for (int i = 0; i < 6; i++)
     {
-        SendMessageW(s->hZoneAction[z], CB_SETCURSEL, sl.action[z], 0);
-        SetWindowTextW(s->hZoneArgs[z], sl.args[z].c_str());
-        s->tuning[z] = sl.tuning[z];
-    }
-    DashShowZoneTuning(s);
-}
+        int own = TuningField(zv.tuning, i);
+        bool overridden = own >= 0;
+        int value = overridden ? own : GlobalField(s->globals, i, (Zone)zone);
+        std::wstring from = overridden ? L"this zone" : L"global";
 
-// Switches the window to whichever display the combo now shows, keeping what
-// was on screen for the previous one.
-static void DashLoadZones(DashState *s)
-{
-    int sel = (int)SendMessageW(s->hMonitor, CB_GETCURSEL, 0, 0);
-    if (sel < 0)
-        sel = 0;
-
-    if (sel != s->cfgIndex)
-        DashCaptureSlot(s);
-
-    s->cfgIndex = sel;
-    if (sel >= (int)s->slots.size())
-        s->slots.resize(sel + 1);
-
-    DashFillSlotFromStore(s, sel);
-    DashShowSlot(s);
-}
-
-static void DashLoad(HWND hWnd, DashState *s)
-{
-    // Monitor selector: one slot per detected display, plus a wildcard.
-    SendMessageW(s->hMonitor, CB_RESETCONTENT, 0, 0);
-    SendMessageW(s->hMonitor, CB_ADDSTRING, 0, (LPARAM)L"All monitors  ( * )");
-    // Take a reference to the snapshot under the lock, then read it outside:
-    // it is immutable and shared_ptr keeps it alive even if the detection
-    // thread publishes a new one mid-loop. Reading g_monitors directly here
-    // was a use-after-free — RefreshMonitors clears that vector and frees
-    // every id string while this thread walks it.
-    EnterCriticalSection(&g_zonesLock);
-    std::shared_ptr<const ZoneSet> snap = g_zones;
-    LeaveCriticalSection(&g_zonesLock);
-    std::vector<std::wstring> names;
-    if (snap)
-        names = snap->monitorNames;
-    for (const auto &n : names)
-        SendMessageW(s->hMonitor, CB_ADDSTRING, 0, (LPARAM)n.c_str());
-    SendMessageW(s->hMonitor, CB_SETCURSEL, 0, 0);
-
-    // One slot per combo entry: the wildcard plus every detected display.
-    s->slots.assign(names.size() + 1, DashState::Slot{});
-    s->cfgIndex = 0;
-
-    // Bind each combo entry to the stored group that names it. Doing this by
-    // position instead - slot i reads and writes g<i> - was a silent data loss:
-    // the combo is ordered primary first then left to right, so making another
-    // display primary or unplugging one renumbers every entry after it, and the
-    // editor would then show one display's zones under another's name and Save
-    // would overwrite them there. Detection has always matched by name; this is
-    // the editor catching up.
-    for (int i = 0; i < kMaxGuiConfigs; i++)
-    {
-        std::wstring id = GetStrValue(GuiKey(i, -1, L"id").c_str());
-        if (id.empty())
-            continue;
-        s->storeUsed[i] = true;
-        for (int slot = 0; slot < (int)s->slots.size(); slot++)
+        // Size on an edge belongs to the strip, not the segment: all three get
+        // the same thickness, taken from the first that asks for one. Reporting
+        // this segment's own override made the panel claim 10 px while the
+        // picture and the pointer both used the 20 px its neighbour asked for.
+        Zone trio[3];
+        if (i == 0 && EdgeTrio((Zone)zone, trio))
         {
-            if (s->slots[slot].store < 0 &&
-                _wcsicmp(id.c_str(), DashSlotMonitorId(s, slot).c_str()) == 0)
+            int owner = -1;
+            for (Zone t : trio)
             {
-                s->slots[slot].store = i;
-                break;
-            }
-        }
-    }
-
-    EnterCriticalSection(&g_settingsLock);
-    DashSetInt(s, IDC_CORNER, g_settings.cornerSize);
-    DashSetInt(s, IDC_EDGE, g_settings.edgeSize);
-    DashSetInt(s, IDC_DELAY, g_settings.activationDelay);
-    DashSetInt(s, IDC_SETTLE, g_settings.settleMs);
-    DashSetInt(s, IDC_KNOCK, g_settings.knockWindowMs);
-    DashSetInt(s, IDC_COOLDOWN, g_settings.cooldownMs);
-    DashSetInt(s, IDC_CENTREPCT, g_settings.centerZonePercent);
-    DashSetInt(s, IDC_LOCKBLANK, g_lockBlankDelayMs);
-    SendMessageW(s->hOpt[IDC_MODIFIER - IDC_OPT_FIRST], CB_SETCURSEL,
-                 g_settings.requireModifier, 0);
-    std::wstring excl;
-    for (size_t i = 0; i < g_settings.excludedProcesses.size(); i++)
-    {
-        if (i)
-            excl += L";";
-        excl += g_settings.excludedProcesses[i];
-    }
-    SetWindowTextW(s->hOpt[IDC_EXCLUDED - IDC_OPT_FIRST], excl.c_str());
-    CheckDlgButton(hWnd, IDC_CB_FULLSCREEN,
-                   g_settings.disableOnFullscreen ? BST_CHECKED : BST_UNCHECKED);
-    CheckDlgButton(hWnd, IDC_CB_DRAG,
-                   g_settings.disableDuringDrag ? BST_CHECKED : BST_UNCHECKED);
-    CheckDlgButton(hWnd, IDC_CB_TASKBAR,
-                   g_settings.avoidTaskbar ? BST_CHECKED : BST_UNCHECKED);
-    LeaveCriticalSection(&g_settingsLock);
-    CheckDlgButton(hWnd, IDC_CB_MONNAMES,
-                   g_showMonitorNames ? BST_CHECKED : BST_UNCHECKED);
-
-    DashLoadZones(s);
-}
-
-static void DashSave(HWND hWnd, DashState *s)
-{
-    // Held across the writes and the reload that follows them, so a reload
-    // started elsewhere - the tray's reset, or Windhawk - cannot read the store
-    // halfway through this save and publish a mixture of the two.
-    EnterCriticalSection(&g_reloadLock);
-
-    // Fold what is on screen back into its slot, then write every slot the
-    // window has touched. Writing only the visible one meant a two-monitor
-    // setup could not be configured in a single session: the other display's
-    // edits were still in memory and never reached the store.
-    DashCaptureSlot(s);
-
-    for (int sel = 0; sel < (int)s->slots.size(); sel++)
-    {
-        DashState::Slot &sl = s->slots[sel];
-        if (!sl.loaded)
-            continue;
-
-        std::wstring monName = DashSlotMonitorId(s, sel);
-
-        // Each slot goes back to the group it was read from. A display being
-        // configured for the first time takes the lowest group nobody owns -
-        // not its combo position, which some other display may already hold.
-        if (sl.store < 0)
-        {
-            bool any = false;
-            for (int z = 0; z < ZONE_COUNT && !any; z++)
-                any = sl.action[z] != 0;   // 0 is ACTION_NOTHING
-            if (!any)
-                continue;   // visited but never configured; do not spend a group
-
-            for (int i = 0; i < kMaxGuiConfigs; i++)
-            {
-                if (!s->storeUsed[i])
+                if (dv.zones[t].tuning.size > 0)
                 {
-                    s->storeUsed[i] = true;
-                    sl.store = i;
+                    owner = (int)t;
                     break;
                 }
             }
-        }
-        // More configured displays than the store has groups. ReadDashboardZones
-        // only walks g0..g7, so anything past that would vanish on reload with
-        // nothing said.
-        if (sl.store < 0)
-        {
-            Wh_Log(L"Dashboard: all %d configuration slots are in use; \"%s\" "
-                   L"was not saved",
-                   kMaxGuiConfigs, monName.c_str());
-            continue;
+            if (owner < 0)
+            {
+                overridden = false;
+                value = s->globals.edgeSize;
+                from = L"global";
+            }
+            else
+            {
+                overridden = true;
+                value = dv.zones[owner].tuning.size;
+                from = (owner == zone) ? L"this zone"
+                                       : std::wstring(L"whole edge, set on ") +
+                                             ZoneToString((Zone)owner);
+            }
         }
 
-        const int g = sl.store;
-        Wh_SetStringValue(GuiKey(g, -1, L"id").c_str(), monName.c_str());
-        for (int z = 0; z < ZONE_COUNT; z++)
+        // Report what the zone will actually use, not what was typed. Both
+        // clamps below are applied by BuildZoneSet before anything fires, so
+        // without them an edge thickness of 40 next to 6 px corners printed
+        // "40 px" under a column headed IN EFFECT - in the one place a user
+        // goes to ask why a zone is not the size they set.
+        if (i == 0 && dv.width > 0 && dv.height > 0)
         {
-            int idx = sl.action[z];
-            if (idx < 0 || idx >= kActionCount)
-                idx = 0;
-            Wh_SetStringValue(GuiKey(g, z, L"a").c_str(), kActionIds[idx]);
-            Wh_SetStringValue(GuiKey(g, z, L"g").c_str(), sl.args[z].c_str());
+            // Same rect BuildZoneSet measures against, or the panel reports a
+            // size the zone does not use.
+            int mw = dv.width, mh = dv.height;
+            if (s->globals.avoidTaskbar && dv.workWidth > 0 &&
+                dv.workHeight > 0)
+            {
+                mw = dv.workWidth;
+                mh = dv.workHeight;
+            }
+            int span = mw < mh ? mw : mh;
+            int effective = ClampZoneSize(value, span);
 
-            const ZoneTuning &tn = sl.tuning[z];
-            Wh_SetIntValue(GuiKey(g, z, L"sz").c_str(), tn.size);
-            Wh_SetIntValue(GuiKey(g, z, L"dl").c_str(), tn.delay);
-            Wh_SetIntValue(GuiKey(g, z, L"gd").c_str(), tn.settle);
-            Wh_SetIntValue(GuiKey(g, z, L"kn").c_str(), tn.knock);
-            Wh_SetIntValue(GuiKey(g, z, L"cd").c_str(), tn.cooldown);
-            Wh_SetIntValue(GuiKey(g, z, L"md").c_str(), tn.modifier);
+            Zone corners[2];
+            if (EdgeCorners((Zone)zone, corners))
+            {
+                int cap = span;
+                for (Zone c : corners)
+                {
+                    int cs = dv.zones[c].tuning.size > 0
+                                 ? dv.zones[c].tuning.size
+                                 : s->globals.cornerSize;
+                    cs = ClampZoneSize(cs, span);
+                    if (cs < cap)
+                        cap = cs;
+                }
+                if (effective > cap)
+                    effective = cap;
+            }
+
+            if (effective != value)
+            {
+                from += L", clamped";
+                value = effective;
+            }
         }
+
+        std::wstring text = FormatTuning(i, value);
+
+        SetTextColor(hdc, g_pal.dim);
+        r = {cLabel, y, cValue, y + Sc(Lay::DetRowH, d)};
+        DrawTextW(hdc, kTuningNames[i], -1, &r, DT_LEFT | DT_SINGLELINE);
+
+        SetTextColor(hdc, g_pal.text);
+        r = {cValue, y, cFrom, y + Sc(Lay::DetRowH, d)};
+        DrawTextW(hdc, text.c_str(), -1, &r, DT_LEFT | DT_SINGLELINE);
+
+        SetTextColor(hdc, overridden ? g_pal.accent : g_pal.dim);
+        r = {cFrom, y, right, y + Sc(Lay::DetRowH, d)};
+        DrawTextW(hdc, from.c_str(), -1, &r,
+                  DT_LEFT | DT_SINGLELINE | DT_END_ELLIPSIS);
+
+        y += Sc(Lay::DetRowH, d);
     }
-    Wh_SetIntValue(L"gui_active", 1);
 
-    // Global options.
-    Wh_SetIntValue(L"ovr_corner", DashGetInt(s, IDC_CORNER, 6));
-    Wh_SetIntValue(L"ovr_edge", DashGetInt(s, IDC_EDGE, 6));
-    Wh_SetIntValue(L"ovr_delay", DashGetInt(s, IDC_DELAY, 0));
-    Wh_SetIntValue(L"ovr_settle", DashGetInt(s, IDC_SETTLE, 80));
-    Wh_SetIntValue(L"ovr_knock", DashGetInt(s, IDC_KNOCK, 0));
-    Wh_SetIntValue(L"ovr_cooldown", DashGetInt(s, IDC_COOLDOWN, 300));
-    Wh_SetIntValue(L"ovr_centre", DashGetInt(s, IDC_CENTREPCT, 20));
-    Wh_SetIntValue(L"ovr_lockblank", DashGetInt(s, IDC_LOCKBLANK, 1200));
-    Wh_SetIntValue(L"ovr_modifier",
-                   (int)SendMessageW(s->hOpt[IDC_MODIFIER - IDC_OPT_FIRST],
-                                     CB_GETCURSEL, 0, 0));
-    wchar_t excl[512] = {};
-    GetWindowTextW(s->hOpt[IDC_EXCLUDED - IDC_OPT_FIRST], excl,
-                   ARRAYSIZE(excl));
-    Wh_SetStringValue(L"ovr_excluded", excl);
-    Wh_SetIntValue(kOvrFullscreen, IsDlgButtonChecked(hWnd, IDC_CB_FULLSCREEN));
-    Wh_SetIntValue(kOvrDrag, IsDlgButtonChecked(hWnd, IDC_CB_DRAG));
-    Wh_SetIntValue(L"ovr_taskbar", IsDlgButtonChecked(hWnd, IDC_CB_TASKBAR));
-    Wh_SetIntValue(L"ovr_monnames", IsDlgButtonChecked(hWnd, IDC_CB_MONNAMES));
+    SelectObject(hdc, old);
+}
 
-    ReloadConfig();
-    LeaveCriticalSection(&g_reloadLock);
+// =====================================================================
+// Hit testing
+// =====================================================================
 
-    RequestRebuild();
-    UpdateTrayIcon(false);
-    Wh_Log(L"Dashboard: settings saved and applied");
+static int DashHitZone(DashState *s, POINT pt)
+{
+    if (s->displays.empty())
+        return -1;
+    RECT dg = DashDiagramRect(s);
+    for (int z = 0; z < ZONE_COUNT; z++)
+    {
+        RECT r = ZoneRectInDiagram((Zone)z, dg);
+        if (PtInRect(&r, pt))
+            return z;
+    }
+    return -1;
+}
+
+static int DashHitTab(DashState *s, POINT pt)
+{
+    for (int i = 0; i < (int)s->tabRects.size(); i++)
+        if (PtInRect(&s->tabRects[i], pt))
+            return i;
+    return -1;
+}
+
+// Posted when the configuration changes underneath an open window.
+static constexpr UINT WM_APP_DASH_REFRESH = WM_APP + 21;
+
+static void DashMakeFonts(DashState *s)
+{
+    if (s->hFont)
+        DeleteObject(s->hFont);
+    if (s->hFontBold)
+        DeleteObject(s->hFontBold);
+    if (s->hFontSmall)
+        DeleteObject(s->hFontSmall);
+    if (s->hFontVert)
+        DeleteObject(s->hFontVert);
+
+    s->hFont = DashMakeFont(s->dpi, 12, false, 0);
+    s->hFontBold = DashMakeFont(s->dpi, 12, true, 0);
+    s->hFontSmall = DashMakeFont(s->dpi, 11, false, 0);
+    // 900 tenths of a degree: bottom-to-top, for the left and right strips.
+    s->hFontVert = DashMakeFont(s->dpi, 11, false, 900);
 }
 
 static LRESULT CALLBACK DashWndProc(HWND hWnd, UINT uMsg, WPARAM wParam,
@@ -4357,392 +5277,215 @@ static LRESULT CALLBACK DashWndProc(HWND hWnd, UINT uMsg, WPARAM wParam,
 
     switch (uMsg)
     {
-    case WM_CREATE:
+    case WM_NCCREATE:
     {
         auto *cs = (CREATESTRUCTW *)lParam;
-        s = (DashState *)cs->lpCreateParams;
-        SetWindowLongPtrW(hWnd, GWLP_USERDATA, (LONG_PTR)s);
+        SetWindowLongPtrW(hWnd, GWLP_USERDATA, (LONG_PTR)cs->lpCreateParams);
+        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+    }
 
-        s->dpi = 96;
+    case WM_CREATE:
+    {
+        s = (DashState *)GetWindowLongPtrW(hWnd, GWLP_USERDATA);
+
+        UINT dpi = 96;
         {
             HMODULE u = GetModuleHandleW(L"user32.dll");
             using Fn = UINT(WINAPI *)(HWND);
             if (auto fn = (Fn)GetProcAddress(u, "GetDpiForWindow"))
-                s->dpi = fn(hWnd);
-            if (!s->dpi)
-                s->dpi = 96;
+                if (UINT v = fn(hWnd))
+                    dpi = v;
         }
+        s->dpi = dpi;
 
-        LOGFONTW lf = {};
-        lf.lfHeight = -MulDiv(9, (int)s->dpi, 72);
-        lf.lfWeight = FW_NORMAL;
-        wcscpy_s(lf.lfFaceName, L"Segoe UI");
-        s->hFont = CreateFontIndirectW(&lf);
-        BuildPalette();
+        DashMakeFonts(s);
         s->hBg = CreateSolidBrush(g_pal.bg);
-        s->hField = CreateSolidBrush(g_pal.field);
 
-        // Every control is themed here rather than at its call site: the six
-        // scattered calls this replaces covered the combo boxes and edits and
-        // missed every button and check box, which is why those kept painting
-        // black text on the dark background.
-        auto mk = [&](const wchar_t *cls, const wchar_t *txt, DWORD style,
-                      int id) -> HWND
-        {
-            HWND h = CreateWindowExW(0, cls, txt, WS_CHILD | style, 0, 0, 10,
-                                     10, hWnd, (HMENU)(INT_PTR)id,
-                                     cs->hInstance, nullptr);
-            if (h)
-            {
-                SendMessageW(h, WM_SETFONT, (WPARAM)s->hFont, TRUE);
-                ApplyControlTheme(h, cls);
-            }
-            return h;
-        };
+        s->hClose = CreateWindowExW(
+            0, L"BUTTON", L"Close",
+            WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON, 0, 0, 0, 0,
+            hWnd, (HMENU)(INT_PTR)IDC_CLOSE, GetModuleHandle(nullptr), nullptr);
+        SendMessageW(s->hClose, WM_SETFONT, (WPARAM)s->hFont, TRUE);
+        ApplyControlTheme(s->hClose, L"BUTTON");
 
-        s->hPageZones = mk(L"BUTTON", L"Zones", BS_PUSHBUTTON | WS_VISIBLE |
-                                                    WS_TABSTOP, IDC_PAGE_ZONES);
-        s->hPageOptions = mk(L"BUTTON", L"Options",
-                             BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP,
-                             IDC_PAGE_OPTIONS);
-        s->hMonitor = mk(L"COMBOBOX", nullptr,
-                         CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP,
-                         IDC_MONITOR);
+        // Title bar and Alt-Tab. WM_SETICON does not take ownership, so both
+        // handles are kept on the state and destroyed with the window.
+        s->hIcon = MakeHotCornerIcon(GetSystemMetrics(SM_CXICON), true);
+        s->hIconSm = MakeHotCornerIcon(GetSystemMetrics(SM_CXSMICON), true);
+        if (s->hIcon)
+            SendMessageW(hWnd, WM_SETICON, ICON_BIG, (LPARAM)s->hIcon);
+        if (s->hIconSm)
+            SendMessageW(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)s->hIconSm);
 
-        for (int z = 0; z < ZONE_COUNT; z++)
-        {
-            s->hZoneLabel[z] = mk(L"STATIC", ZoneToString((Zone)z), SS_LEFT, 0);
-            s->hZoneAction[z] =
-                mk(L"COMBOBOX", nullptr,
-                   CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP,
-                   IDC_ZONE_ACTION + z);
-            for (int a = 0; a < kActionCount; a++)
-            {
-                SendMessageW(s->hZoneAction[z], CB_ADDSTRING, 0,
-                             (LPARAM)ActionToString(ParseActionType(kActionIds[a])));
-            }
-            s->hZoneArgs[z] = mk(L"EDIT", nullptr,
-                                 WS_BORDER | ES_AUTOHSCROLL | WS_TABSTOP,
-                                 IDC_ZONE_ARGS + z);
-            // DashCaptureSlot reads these back into a 512-wchar buffer, so stop
-            // the typing at the same point rather than truncating in silence.
-            SendMessageW(s->hZoneArgs[z], EM_SETLIMITTEXT, 511, 0);
-        }
-
-        for (int i = 0; i < kOptCount; i++)
-        {
-            s->hOptSection[i] =
-                kOpts[i].section
-                    ? mk(L"STATIC", kOpts[i].section, SS_LEFT, IDC_OPT_SECTION)
-                    : nullptr;
-
-            if (kOpts[i].isCheck)
-            {
-                s->hOpt[i] = mk(L"BUTTON", kOpts[i].label,
-                                BS_AUTOCHECKBOX | WS_TABSTOP, kOpts[i].id);
-                s->hOptLabel[i] = nullptr;
-            }
-            else
-            {
-                s->hOptLabel[i] = mk(L"STATIC", kOpts[i].label, SS_LEFT, 0);
-                if (kOpts[i].id == IDC_MODIFIER)
-                {
-                    s->hOpt[i] = mk(L"COMBOBOX", nullptr,
-                                    CBS_DROPDOWNLIST | WS_TABSTOP,
-                                    kOpts[i].id);
-                    const wchar_t *mods[] = {L"None", L"Ctrl", L"Alt", L"Shift",
-                                             L"Win"};
-                    for (auto m : mods)
-                        SendMessageW(s->hOpt[i], CB_ADDSTRING, 0, (LPARAM)m);
-                }
-                else
-                {
-                    s->hOpt[i] = mk(L"EDIT", nullptr,
-                                    WS_BORDER | ES_AUTOHSCROLL | WS_TABSTOP,
-                                    kOpts[i].id);
-                }
-            }
-        }
-
-        // Column headers - the argument field previously had no label at all.
-        s->hHdrZone = mk(L"STATIC", L"Zone", SS_LEFT, IDC_HDR_ZONE);
-        s->hHdrAction = mk(L"STATIC", L"Action", SS_LEFT, IDC_HDR_ACTION);
-        s->hHdrArgs = mk(L"STATIC", L"Argument / command", SS_LEFT, IDC_HDR_ARGS);
-
-        s->hTzTitle = mk(L"STATIC", L"Settings for this zone", SS_LEFT,
-                         IDC_TZ_TITLE);
-        s->hTzHint = mk(L"STATIC", L"Leave blank to use the global value.",
-                        SS_LEFT, IDC_TZ_HINT);
-        for (int i = 0; i < kTzCount; i++)
-        {
-            s->hTzLabel[i] = mk(L"STATIC", kTz[i].label, SS_LEFT, 0);
-            if (kTz[i].id == IDC_TZ_MODIFIER)
-            {
-                s->hTz[i] = mk(L"COMBOBOX", nullptr,
-                               CBS_DROPDOWNLIST | WS_TABSTOP, kTz[i].id);
-                const wchar_t *mv[] = {L"Inherit", L"None", L"Ctrl",
-                                       L"Alt",     L"Shift", L"Win"};
-                for (auto v : mv)
-                    SendMessageW(s->hTz[i], CB_ADDSTRING, 0, (LPARAM)v);
-            }
-            else
-            {
-                s->hTz[i] = mk(L"EDIT", nullptr,
-                               WS_BORDER | ES_AUTOHSCROLL | ES_NUMBER |
-                                   WS_TABSTOP,
-                               kTz[i].id);
-            }
-        }
-
-        s->hSave = mk(L"BUTTON", L"Save and Apply",
-                      BS_DEFPUSHBUTTON | WS_VISIBLE | WS_TABSTOP, IDC_SAVE);
-        s->hCancel = mk(L"BUTTON", L"Close",
-                        BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP, IDC_CANCEL);
-        s->hReset = mk(L"BUTTON", L"Reset everything to defaults",
-                       BS_PUSHBUTTON | WS_VISIBLE | WS_TABSTOP, IDC_RESET);
-
-        // One tooltip control serving every field. Descriptions live next to
-        // the field definitions so a new setting cannot be added without one.
-        s->hTip = CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr,
-                                  WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP, 0, 0,
-                                  0, 0, hWnd, nullptr, cs->hInstance, nullptr);
-        if (s->hTip)
-        {
-            SendMessageW(s->hTip, TTM_SETMAXTIPWIDTH, 0, Sc(320, s->dpi));
-            SendMessageW(s->hTip, WM_SETFONT, (WPARAM)s->hFont, TRUE);
-            // A themed tooltip ignores TTM_SETTIPBKCOLOR/TEXTCOLOR outright, so
-            // it kept the system tooltip colours while the rest of the window
-            // followed the palette. Both strings must be empty or theming is
-            // not actually switched off.
-            ThemeControl(s->hTip, L"", L"");
-            SendMessageW(s->hTip, TTM_SETTIPBKCOLOR, (WPARAM)g_pal.panel, 0);
-            SendMessageW(s->hTip, TTM_SETTIPTEXTCOLOR, (WPARAM)g_pal.text, 0);
-            auto tip = [&](HWND ctl, const wchar_t *text)
-            {
-                if (!ctl || !text)
-                    return;
-                TTTOOLINFOW ti = {};
-                ti.cbSize = sizeof(ti);
-                ti.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
-                ti.hwnd = hWnd;
-                ti.uId = (UINT_PTR)ctl;
-                ti.lpszText = const_cast<LPWSTR>(text);
-                SendMessageW(s->hTip, TTM_ADDTOOLW, 0, (LPARAM)&ti);
-            };
-            for (int i = 0; i < kOptCount; i++)
-            {
-                tip(s->hOpt[i], kOpts[i].tip);
-                tip(s->hOptLabel[i], kOpts[i].tip);
-            }
-            for (int i = 0; i < kTzCount; i++)
-            {
-                tip(s->hTz[i], kTz[i].tip);
-                tip(s->hTzLabel[i], kTz[i].tip);
-            }
-            tip(s->hMonitor,
-                L"Which display these zones belong to. Use * to apply one "
-                L"configuration to every monitor.");
-            tip(s->hHdrArgs,
-                L"Extra input for the chosen action: a key combination for "
-                L"Virtual Key Press, a path or URL for Custom Command, or two "
-                L"of either separated by | for the Alternate actions.");
-            tip(s->hReset,
-                L"Discard every zone and option and start again from the "
-                L"defaults. Asks first.");
-        }
-
-        s->hIcon = MakeTrayIcon(true);
-        if (HICON ic = s->hIcon)
-        {
-            SendMessageW(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)ic);
-            SendMessageW(hWnd, WM_SETICON, ICON_BIG, (LPARAM)ic);
-        }
         ApplyModernFrame(hWnd);
-        DashLoad(hWnd, s);
-        DashLayout(hWnd, s);
+        DashBuildSnapshot(s);
         return 0;
     }
 
+    case WM_APP_DASH_REFRESH:
+        if (s)
+        {
+            DashBuildSnapshot(s);
+            InvalidateRect(hWnd, nullptr, TRUE);
+        }
+        return 0;
+
+    case WM_ACTIVATE:
+        // Rebuilt whenever the window comes forward, so editing in Windhawk and
+        // switching back shows the new configuration without a reopen.
+        if (s && LOWORD(wParam) != WA_INACTIVE)
+        {
+            DashBuildSnapshot(s);
+            InvalidateRect(hWnd, nullptr, TRUE);
+        }
+        break;   // DefWindowProc still has focus work to do
+
+    case WM_SIZE:
+        if (s && s->hClose)
+        {
+            RECT rc;
+            GetClientRect(hWnd, &rc);
+            UINT d = s->dpi;
+            int w = Sc(Lay::BtnW, d), h = Sc(Lay::BtnH, d);
+            SetWindowPos(s->hClose, nullptr, rc.right - Sc(Lay::Pad, d) - w,
+                         rc.bottom - Sc(Lay::Pad, d) - h, w, h, SWP_NOZORDER);
+        }
+        return 0;
+
     case WM_ERASEBKGND:
-    {
-        RECT rc;
-        GetClientRect(hWnd, &rc);
-        FillRect((HDC)wParam, &rc,
-                 s && s->hBg ? s->hBg : (HBRUSH)GetStockObject(BLACK_BRUSH));
-        return 1;
-    }
+        return 1;   // WM_PAINT paints every pixel, into a back buffer
 
     case WM_PAINT:
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
-        if (s)
-            DashPaintDiagram(hWnd, s, hdc);
+        RECT rc;
+        GetClientRect(hWnd, &rc);
+
+        // Double-buffered: the diagram is redrawn on every mouse move, and
+        // painting it straight to the window flickers badly.
+        HDC mem = CreateCompatibleDC(hdc);
+        HBITMAP bmp = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
+        HBITMAP oldBmp = (HBITMAP)SelectObject(mem, bmp);
+
+        FillRect(mem, &rc, s->hBg);
+        DashPaintTabs(s, mem, rc);
+        DashPaintDiagram(s, mem);
+        DashPaintDetail(s, mem, rc);
+
+        BitBlt(hdc, 0, 0, rc.right, rc.bottom, mem, 0, 0, SRCCOPY);
+
+        SelectObject(mem, oldBmp);
+        DeleteObject(bmp);
+        DeleteDC(mem);
         EndPaint(hWnd, &ps);
         return 0;
     }
 
     case WM_MOUSEMOVE:
-    case WM_LBUTTONDOWN:
     {
-        if (!s || !s->showZones)
-            break;
         POINT pt = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
-        RECT dg = DashDiagramRect(s->dpi);
-        int hit = -1;
-        // Centres are tested first: they sit inside the span an edge would
-        // otherwise claim, and the first match wins.
-        static const Zone order[ZONE_COUNT] = {
-            ZONE_TOP_LEFT,      ZONE_TOP_RIGHT,     ZONE_BOTTOM_LEFT,
-            ZONE_BOTTOM_RIGHT,  ZONE_CENTER_TOP,    ZONE_CENTER_BOTTOM,
-            ZONE_CENTER_LEFT,   ZONE_CENTER_RIGHT,  ZONE_EDGE_TOP,
-            ZONE_EDGE_BOTTOM,   ZONE_EDGE_LEFT,     ZONE_EDGE_RIGHT};
-        for (int oi = 0; oi < ZONE_COUNT && hit < 0; oi++)
+        int z = DashHitZone(s, pt);
+        if (z != s->hoverZone)
         {
-            Zone z = order[oi];
-            int parts = ZoneHasTwoParts(z) ? 2 : 1;
-            for (int p = 0; p < parts; p++)
-            {
-                RECT r = ZoneRectInDiagram(z, dg, p == 1);
-                if (PtInRect(&r, pt))
-                {
-                    hit = (int)z;
-                    break;
-                }
-            }
+            s->hoverZone = z;
+            InvalidateRect(hWnd, nullptr, FALSE);
         }
-        if (uMsg == WM_MOUSEMOVE)
-        {
-            if (hit != s->hoverZone)
-            {
-                s->hoverZone = hit;
-                // Only the preview changes, so only the preview is repainted.
-                InvalidateRect(hWnd, &dg, TRUE);
-            }
-        }
-        else if (hit >= 0)
-        {
-            DashCaptureZoneTuning(s);
-            s->selZone = hit;
-            DashShowZoneTuning(s);
-            SetFocus(s->hZoneAction[hit]);
-            InvalidateRect(hWnd, nullptr, TRUE);
-        }
+        TRACKMOUSEEVENT tme = {sizeof(tme), TME_LEAVE, hWnd, 0};
+        TrackMouseEvent(&tme);
         return 0;
     }
 
-    case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLORBTN:
-        if (s)
+    case WM_MOUSELEAVE:
+        if (s->hoverZone != -1)
         {
-            // A group heading introduces the fields under it rather than
-            // labelling one of them, and the per-zone hint is an aside. Both
-            // read better set apart from the body text.
-            int cid = GetDlgCtrlID((HWND)lParam);
-            SetTextColor((HDC)wParam, cid == IDC_OPT_SECTION ? g_pal.accent
-                                      : cid == IDC_TZ_HINT   ? g_pal.dim
-                                                             : g_pal.text);
-            SetBkColor((HDC)wParam, g_pal.bg);
-            return (LRESULT)s->hBg;
+            s->hoverZone = -1;
+            InvalidateRect(hWnd, nullptr, FALSE);
         }
-        break;
+        return 0;
 
-    case WM_CTLCOLOREDIT:
-    case WM_CTLCOLORLISTBOX:
-        if (s)
-        {
-            SetTextColor((HDC)wParam, g_pal.fieldText);
-            SetBkColor((HDC)wParam, g_pal.field);
-            return (LRESULT)s->hField;
-        }
-        break;
-
-    case WM_COMMAND:
+    case WM_LBUTTONDOWN:
     {
-        int id = LOWORD(wParam);
-        if (id == IDC_PAGE_ZONES || id == IDC_PAGE_OPTIONS)
+        POINT pt = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+        int tab = DashHitTab(s, pt);
+        if (tab >= 0)
         {
-            s->showZones = (id == IDC_PAGE_ZONES);
-            DashLayout(hWnd, s);
+            if (tab != s->activeTab)
+            {
+                s->activeTab = tab;
+                s->selZone = -1;
+                s->hoverZone = -1;
+                InvalidateRect(hWnd, nullptr, TRUE);
+            }
             return 0;
         }
-        if (id == IDC_MONITOR && HIWORD(wParam) == CBN_SELCHANGE)
+        int z = DashHitZone(s, pt);
+        s->selZone = (z == s->selZone) ? -1 : z;
+        InvalidateRect(hWnd, nullptr, TRUE);
+        return 0;
+    }
+
+    case WM_KEYDOWN:
+        // Left/right walk the tab strip, which is what a tab strip should do.
+        if ((wParam == VK_LEFT || wParam == VK_RIGHT) && !s->displays.empty())
         {
-            DashLoadZones(s);
+            int n = (int)s->displays.size();
+            s->activeTab =
+                (s->activeTab + (wParam == VK_RIGHT ? 1 : n - 1)) % n;
+            s->selZone = -1;
             InvalidateRect(hWnd, nullptr, TRUE);
             return 0;
         }
-        // (int) because IDC_ZONE_ACTION is a DashId and ZONE_COUNT is a Zone:
-        // C++20 deprecates arithmetic between two different enumeration types,
-        // and the mod repository's CI fails the build on any warning.
-        if (id >= IDC_ZONE_ACTION && id < IDC_ZONE_ACTION + (int)ZONE_COUNT)
-        {
-            if (HIWORD(wParam) == CBN_SELCHANGE ||
-                HIWORD(wParam) == CBN_SETFOCUS)
-            {
-                if (HIWORD(wParam) == CBN_SETFOCUS)
-                {
-                    DashCaptureZoneTuning(s);
-                    s->selZone = id - IDC_ZONE_ACTION;
-                    DashShowZoneTuning(s);
-                }
-                InvalidateRect(hWnd, nullptr, TRUE);
-                return 0;
-            }
-        }
-        if (id == IDC_SAVE)
-        {
-            DashSave(hWnd, s);
-            return 0;
-        }
-        if (id == IDC_CANCEL)
+        if (wParam == VK_ESCAPE)
         {
             DestroyWindow(hWnd);
             return 0;
         }
-        if (id == IDC_RESET)
-        {
-            if (MessageBoxW(hWnd,
-                            L"Discard every zone and option and start again "
-                            L"from the defaults?",
-                            L"Win-X Hot Corners", MB_YESNO | MB_ICONQUESTION) ==
-                IDYES)
-            {
-                // Same pairing as DashSave: the wipe and the reload that reads
-                // it back have to look atomic to any other thread.
-                EnterCriticalSection(&g_reloadLock);
-                ClearStoredConfig();
-                ReloadConfig();
-                LeaveCriticalSection(&g_reloadLock);
+        break;
 
-                RequestRebuild();
-                DashLoad(hWnd, s);
-            }
+    case WM_CTLCOLORBTN:
+    case WM_CTLCOLORSTATIC:
+        SetTextColor((HDC)wParam, g_pal.text);
+        SetBkColor((HDC)wParam, g_pal.bg);
+        return (LRESULT)s->hBg;
+
+    case WM_COMMAND:
+        // IDCANCEL is what IsDialogMessage turns Escape into.
+        if (LOWORD(wParam) == IDC_CLOSE || LOWORD(wParam) == IDCANCEL)
+        {
+            DestroyWindow(hWnd);
             return 0;
         }
         break;
-    }
 
     case WM_DPICHANGED:
     {
         s->dpi = HIWORD(wParam);
-        if (s->hFont)
-            DeleteObject(s->hFont);
-        LOGFONTW lf = {};
-        lf.lfHeight = -MulDiv(9, (int)s->dpi, 72);
-        wcscpy_s(lf.lfFaceName, L"Segoe UI");
-        s->hFont = CreateFontIndirectW(&lf);
-        EnumChildWindows(hWnd, DashSetChildFont, (LPARAM)s->hFont);
-        RECT *r = (RECT *)lParam;
-        SetWindowPos(hWnd, nullptr, r->left, r->top, r->right - r->left,
-                     r->bottom - r->top, SWP_NOZORDER | SWP_NOACTIVATE);
-        DashLayout(hWnd, s);
+        DashMakeFonts(s);
+        SendMessageW(s->hClose, WM_SETFONT, (WPARAM)s->hFont, TRUE);
+        RECT *nr = (RECT *)lParam;
+        SetWindowPos(hWnd, nullptr, nr->left, nr->top, nr->right - nr->left,
+                     nr->bottom - nr->top, SWP_NOZORDER | SWP_NOACTIVATE);
+        InvalidateRect(hWnd, nullptr, TRUE);
         return 0;
     }
 
-    case WM_SIZE:
-        if (s)
-            DashLayout(hWnd, s);
+    case WM_SETTINGCHANGE:
+        // The user switched between light and dark while the window was open.
+        if (lParam && wcscmp((const wchar_t *)lParam, L"ImmersiveColorSet") == 0)
+        {
+            BuildPalette();
+            // The palette alone does not reach the Close button: it keeps the
+            // theme it was given at creation, so switching light to dark left a
+            // light button on a dark window.
+            SetProcessDarkMode(!g_lightTheme);
+            ApplyControlTheme(s->hClose, L"BUTTON");
+            if (s->hBg)
+                DeleteObject(s->hBg);
+            s->hBg = CreateSolidBrush(g_pal.bg);
+            ApplyModernFrame(hWnd);
+            InvalidateRect(hWnd, nullptr, TRUE);
+        }
         return 0;
 
     case WM_DESTROY:
@@ -4750,27 +5493,33 @@ static LRESULT CALLBACK DashWndProc(HWND hWnd, UINT uMsg, WPARAM wParam,
         {
             if (s->hFont)
                 DeleteObject(s->hFont);
+            if (s->hFontBold)
+                DeleteObject(s->hFontBold);
+            if (s->hFontSmall)
+                DeleteObject(s->hFontSmall);
+            if (s->hFontVert)
+                DeleteObject(s->hFontVert);
             if (s->hBg)
                 DeleteObject(s->hBg);
-            if (s->hField)
-                DeleteObject(s->hField);
             if (s->hIcon)
                 DestroyIcon(s->hIcon);
+            if (s->hIconSm)
+                DestroyIcon(s->hIconSm);
+            s->hFont = s->hFontBold = s->hFontSmall = s->hFontVert = nullptr;
+            s->hBg = nullptr;
+            s->hIcon = s->hIconSm = nullptr;
         }
         g_hDashWnd = nullptr;
         PostQuitMessage(0);
         return 0;
     }
+
     return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }
 
 static DWORD WINAPI DashThread(LPVOID)
 {
     PinThreadDpiPerMonitorV2();
-
-    // TOOLTIPS_CLASS lives in comctl32 and needs the library initialised.
-    INITCOMMONCONTROLSEX icc = {sizeof(icc), ICC_WIN95_CLASSES};
-    InitCommonControlsEx(&icc);
 
     const wchar_t *kClass = L"WindhawkHotCornersDash";
     HINSTANCE hInst = GetModuleHandle(nullptr);
@@ -4813,9 +5562,9 @@ static DWORD WINAPI DashThread(LPVOID)
     int x = (GetSystemMetrics(SM_CXSCREEN) - w) / 2;
     int y = (GetSystemMetrics(SM_CYSCREEN) - h) / 2;
 
-    HWND hWnd = CreateWindowExW(0, kClass, L"Win-X Hot Corners — Settings",
-                                style, x, y, w, h, nullptr, nullptr, hInst,
-                                &state);
+    HWND hWnd = CreateWindowExW(0, kClass,
+                                L"Win-X Hot Corners — Zones & settings", style,
+                                x, y, w, h, nullptr, nullptr, hInst, &state);
 
     if (!hWnd)
     {
@@ -4825,9 +5574,45 @@ static DWORD WINAPI DashThread(LPVOID)
 
     AllowDarkModeForControl(hWnd, !g_lightTheme);
 
+    // The frame above was sized from the system DPI, but the layout inside is
+    // computed from the window's own. They agree on the usual setup and can
+    // disagree if the primary display's scaling changed without a sign-out, so
+    // resize to whatever the window actually landed on.
+    {
+        HMODULE u = GetModuleHandleW(L"user32.dll");
+        using Fn = UINT(WINAPI *)(HWND);
+        UINT real = dpi;
+        if (auto fn = (Fn)GetProcAddress(u, "GetDpiForWindow"))
+            if (UINT v = fn(hWnd))
+                real = v;
+        if (real != dpi)
+        {
+            RECT want = {0, 0, Sc(Lay::ClientW, real), Sc(Lay::ClientH, real)};
+            AdjustWindowRectEx(&want, style, FALSE, 0);
+            SetWindowPos(hWnd, nullptr, 0, 0, want.right - want.left,
+                         want.bottom - want.top,
+                         SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
+        }
+    }
+
     g_hDashWnd = hWnd;
+
+    // Uninit closes this window by posting WM_CLOSE to g_hDashWnd, which is
+    // only useful once the handle above is published. Opening the dashboard and
+    // unloading the mod in the same instant used to slip between the two: the
+    // post found nullptr, nothing else ever told this thread to stop, and the
+    // loop below parked in GetMessageW forever - so uninit timed out, took its
+    // "leak rather than free from under a live thread" path, and left the
+    // window on screen. The stop event is set before that post, so checking it
+    // here catches every interleaving.
+    if (g_hStopEvent && WaitForSingleObject(g_hStopEvent, 0) == WAIT_OBJECT_0)
+        PostMessage(hWnd, WM_CLOSE, 0, 0);
+
     ShowWindow(hWnd, SW_SHOW);
     SetForegroundWindow(hWnd);
+    // Focus the window itself rather than the Close button, so the arrow keys
+    // reach WM_KEYDOWN and can walk the tab strip. Tab still moves to Close.
+    SetFocus(hWnd);
 
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0))
@@ -4845,11 +5630,12 @@ static DWORD WINAPI DashThread(LPVOID)
 
 static void OpenDashboard()
 {
-    if (g_hDashWnd && IsWindow(g_hDashWnd))
+    HWND hDash = g_hDashWnd.load();
+    if (hDash && IsWindow(hDash))
     {
         // Already open — bring it forward rather than making a second one.
-        ShowWindow(g_hDashWnd, SW_RESTORE);
-        SetForegroundWindow(g_hDashWnd);
+        ShowWindow(hDash, SW_RESTORE);
+        SetForegroundWindow(hDash);
         return;
     }
     if (g_hDashThread)
@@ -4857,8 +5643,17 @@ static void OpenDashboard()
         // Recycle the handle only once the previous thread has actually gone.
         // Closing it while that thread still runs throws away the only way to
         // wait for it during uninit, and starts a second dashboard besides.
-        if (WaitForSingleObject(g_hDashThread, 0) != WAIT_OBJECT_0)
+        //
+        // Waited on briefly rather than abandoned: the window has just been
+        // closed and the thread is already unwinding, so this returns almost
+        // at once. Returning immediately meant that clicking the tray icon
+        // right after closing the dashboard silently did nothing.
+        if (WaitForSingleObject(g_hDashThread, 500) != WAIT_OBJECT_0)
+        {
+            Wh_Log(L"The previous dashboard window is still closing; try again "
+                   L"in a moment.");
             return;
+        }
         CloseHandle(g_hDashThread);
         g_hDashThread = nullptr;
     }
@@ -4884,13 +5679,29 @@ static LRESULT CALLBACK TrayWndProc(HWND hWnd, UINT uMsg, WPARAM wParam,
         }
         else if (ev == NIN_SELECT || ev == NIN_KEYSELECT || ev == WM_LBUTTONUP)
         {
-            OpenDashboard();
+            // Toggle rather than open the dashboard. The icon already shows
+            // enabled state, so the feedback is immediate, and the dashboard
+            // is the menu's default item - which leaves the one-click action
+            // for the thing you actually do repeatedly.
+            HandleTrayCommand(IDM_ENABLED);
         }
         return 0;
     }
     if (uMsg == WM_COMMAND)
     {
         HandleTrayCommand(LOWORD(wParam));
+        return 0;
+    }
+    if (uMsg == WM_APP_TRAY_REFRESH)
+    {
+        UpdateTrayIcon(wParam != 0);
+        return 0;
+    }
+    // The suspension has run out; repaint the icon so it stops saying "paused".
+    if (uMsg == WM_TIMER && wParam == kSuspendTimerId)
+    {
+        KillTimer(hWnd, kSuspendTimerId);
+        UpdateTrayIcon(false);
         return 0;
     }
     // Explorer restarted and threw away every tray icon; put ours back.
@@ -4904,6 +5715,13 @@ static LRESULT CALLBACK TrayWndProc(HWND hWnd, UINT uMsg, WPARAM wParam,
 
 static DWORD WINAPI TrayThread(LPVOID)
 {
+    // The detection and dashboard threads both pin this; the tray one did not.
+    // UpdateTrayIcon -> MakeTrayIcon reads GetSystemMetrics(SM_CXSMICON), and
+    // it is called both from here and from Windhawk's thread, which can be in a
+    // different awareness context - so the icon could be built at the wrong
+    // size on a mixed-scaling setup depending on who asked for it.
+    PinThreadDpiPerMonitorV2();
+
     const wchar_t *kClass = L"WindhawkHotCornersTray";
     HINSTANCE hInst = GetModuleHandle(nullptr);
 
@@ -4919,7 +5737,7 @@ static DWORD WINAPI TrayThread(LPVOID)
 
     g_hTrayWnd = CreateWindowEx(WS_EX_TOOLWINDOW, kClass, nullptr, WS_POPUP, 0,
                                 0, 0, 0, nullptr, nullptr, hInst, nullptr);
-    if (!g_hTrayWnd)
+    if (!g_hTrayWnd.load())
     {
         Wh_Log(L"Tray: failed to create the icon's window");
         UnregisterClass(kClass, hInst);
@@ -4940,7 +5758,8 @@ static DWORD WINAPI TrayThread(LPVOID)
     FillTrayIconData(nid);
     Shell_NotifyIconW(NIM_DELETE, &nid);
 
-    DestroyWindow(g_hTrayWnd);
+    CancelSuspendTimer();
+    DestroyWindow(g_hTrayWnd.load());
     g_hTrayWnd = nullptr;
     UnregisterClass(kClass, hInst);
     return 0;
@@ -4953,8 +5772,9 @@ static DWORD WINAPI TrayThread(LPVOID)
 BOOL WhTool_ModInit()
 {
     Wh_Log(L"Win-X Hot Corners v" WH_MOD_VERSION);
-    Wh_Log(L"This mod has no Settings page. Right-click its tray icon (next to "
-           L"the clock) and choose \"Zones & settings...\".");
+    Wh_Log(L"Zones and timings live on this mod's Settings page. Right-click "
+           L"its tray icon (next to the clock) and choose \"Zones & "
+           L"settings...\" to see what they add up to.");
 
     InitializeCriticalSection(&g_settingsLock);
     InitializeCriticalSection(&g_reloadLock);
@@ -4999,12 +5819,16 @@ BOOL WhTool_ModInit()
 void WhTool_ModSettingsChanged()
 {
     ReloadConfig();
-    UpdateTrayIcon(false);
+    if (HWND hTray = g_hTrayWnd.load())
+        PostMessage(hTray, WM_APP_TRAY_REFRESH, 0, 0);
     // The zone rebuild has to happen on the detection thread, which owns the
     // DPI context and the monitor list. Post, never send — Windhawk's thread
     // must not block on ours.
-    if (g_hDetectWnd)
-        PostMessage(g_hDetectWnd, WM_APP_REBUILD, 0, 0);
+    if (HWND hDetect = g_hDetectWnd.load())
+        PostMessage(hDetect, WM_APP_REBUILD, 0, 0);
+    // An open dashboard is showing the configuration that just changed.
+    if (HWND hDash = g_hDashWnd.load())
+        PostMessage(hDash, WM_APP_DASH_REFRESH, 0, 0);
 }
 
 void WhTool_ModUninit()
@@ -5018,14 +5842,43 @@ void WhTool_ModUninit()
     // Only a clean exit counts. WAIT_FAILED means the wait itself broke, which
     // says nothing about whether the thread is finished, so treat it the same
     // as a timeout rather than as success.
+    // Returns whether the thread actually finished, so the caller can decide
+    // whether closing its handle is safe. Closing regardless would contradict
+    // the leak-rather-than-free policy below and throw away the only handle to
+    // a thread this code has just decided is still running.
     auto waitFor = [&allStopped](HANDLE h, const wchar_t *what)
     {
-        if (WaitForSingleObject(h, 3000) != WAIT_OBJECT_0)
-        {
-            Wh_Log(L"%s did not exit cleanly", what);
-            allStopped = false;
-        }
+        if (WaitForSingleObject(h, 3000) == WAIT_OBJECT_0)
+            return true;
+        Wh_Log(L"%s did not exit cleanly", what);
+        allStopped = false;
+        return false;
     };
+
+    // Before anything is told to stop: a zone still holding a peek has to be
+    // undone while both the detection thread and the worker are alive. The
+    // release cannot run here - Keep awake is per-thread and Custom command
+    // needs the worker's COM apartment - so this only asks for it to be queued.
+    // A timeout rather than a plain SendMessage, because a wedged detection
+    // thread must not turn unloading into a hang; it is already the case that
+    // that thread never waits on anything Windhawk's thread holds.
+    if (HWND hDetect = g_hDetectWnd.load())
+    {
+        // The detection thread only dispatches sent messages when it comes
+        // back round to PeekMessage - WaitForSingleObject does not pump them -
+        // so this budget has to cover a tick that happens to be inside
+        // RebuildZones (QueryDisplayConfig with up to three attempts, an
+        // EnumDisplayMonitors, a DisplayConfigGetDeviceInfo pair per path).
+        // 500 ms could expire in there, and losing this message strands exactly
+        // the peeked desktop it exists to restore. 2 s still fits inside the
+        // 3 s join budget below.
+        DWORD_PTR unused = 0;
+        if (!SendMessageTimeout(hDetect, WM_APP_RELEASE_HOLD, 0, 0,
+                                SMTO_ABORTIFHUNG, 2000, &unused))
+        {
+            Wh_Log(L"Hold release timed out; a held zone may not be undone");
+        }
+    }
 
     if (g_hStopEvent)
         SetEvent(g_hStopEvent);
@@ -5035,9 +5888,11 @@ void WhTool_ModUninit()
 
     if (g_hTrayThread)
     {
-        waitFor(g_hTrayThread, L"Tray thread");
-        CloseHandle(g_hTrayThread);
-        g_hTrayThread = nullptr;
+        if (waitFor(g_hTrayThread, L"Tray thread"))
+        {
+            CloseHandle(g_hTrayThread);
+            g_hTrayThread = nullptr;
+        }
     }
 
     if (g_dwDetectThreadId)
@@ -5047,30 +5902,36 @@ void WhTool_ModUninit()
     // and it takes g_settingsLock and g_zonesLock. Nothing below may free
     // those while it is alive. Its loop only ends when its window does, so
     // close the window rather than signalling the stop event.
-    if (g_hDashWnd)
-        PostMessage(g_hDashWnd, WM_CLOSE, 0, 0);
+    if (HWND hDash = g_hDashWnd.load())
+        PostMessage(hDash, WM_CLOSE, 0, 0);
 
     if (g_hDashThread)
     {
-        waitFor(g_hDashThread, L"Dashboard thread");
-        CloseHandle(g_hDashThread);
-        g_hDashThread = nullptr;
+        if (waitFor(g_hDashThread, L"Dashboard thread"))
+        {
+            CloseHandle(g_hDashThread);
+            g_hDashThread = nullptr;
+        }
     }
 
     if (g_hDetectThread)
     {
-        waitFor(g_hDetectThread, L"Detection thread");
-        CloseHandle(g_hDetectThread);
-        g_hDetectThread = nullptr;
+        if (waitFor(g_hDetectThread, L"Detection thread"))
+        {
+            CloseHandle(g_hDetectThread);
+            g_hDetectThread = nullptr;
+        }
     }
 
     if (g_hWorkerThread)
     {
         // Can legitimately still be inside ShellExecuteEx (a UAC prompt keeps
         // it there indefinitely).
-        waitFor(g_hWorkerThread, L"Worker thread");
-        CloseHandle(g_hWorkerThread);
-        g_hWorkerThread = nullptr;
+        if (waitFor(g_hWorkerThread, L"Worker thread"))
+        {
+            CloseHandle(g_hWorkerThread);
+            g_hWorkerThread = nullptr;
+        }
     }
 
     // Freeing objects a live thread is still using is undefined behaviour
@@ -5109,21 +5970,26 @@ void WhTool_ModUninit()
 // https://github.com/ramensoftware/windhawk/wiki/Mods-as-tools:-Running-mods-in-a-dedicated-process
 //
 // The mod will load and run in a dedicated windhawk.exe process.
+//
+// Paste the code below as part of the mod code, and use these callbacks:
+// * WhTool_ModInit
+// * WhTool_ModSettingsChanged
+// * WhTool_ModUninit
+//
+// Currently, other callbacks are not supported.
 
 bool g_isToolModProcessLauncher;
 HANDLE g_toolModProcessMutex;
 
-void WINAPI EntryPoint_Hook()
-{
+void WINAPI EntryPoint_Hook() {
+    Wh_Log(L">");
     ExitThread(0);
 }
 
-BOOL Wh_ModInit()
-{
+BOOL Wh_ModInit() {
     DWORD sessionId;
     if (ProcessIdToSessionId(GetCurrentProcessId(), &sessionId) &&
-        sessionId == 0)
-    {
+        sessionId == 0) {
         return FALSE;
     }
 
@@ -5131,31 +5997,25 @@ BOOL Wh_ModInit()
     bool isToolModProcess = false;
     bool isCurrentToolModProcess = false;
     int argc;
-    LPWSTR *argv = CommandLineToArgvW(GetCommandLine(), &argc);
-    if (!argv)
-    {
+    LPWSTR* argv = CommandLineToArgvW(GetCommandLine(), &argc);
+    if (!argv) {
         Wh_Log(L"CommandLineToArgvW failed");
         return FALSE;
     }
 
-    for (int i = 1; i < argc; i++)
-    {
+    for (int i = 1; i < argc; i++) {
         if (wcscmp(argv[i], L"-service") == 0 ||
             wcscmp(argv[i], L"-service-start") == 0 ||
-            wcscmp(argv[i], L"-service-stop") == 0)
-        {
+            wcscmp(argv[i], L"-service-stop") == 0) {
             isExcluded = true;
             break;
         }
     }
 
-    for (int i = 1; i < argc - 1; i++)
-    {
-        if (wcscmp(argv[i], L"-tool-mod") == 0)
-        {
+    for (int i = 1; i < argc - 1; i++) {
+        if (wcscmp(argv[i], L"-tool-mod") == 0) {
             isToolModProcess = true;
-            if (wcscmp(argv[i + 1], WH_MOD_ID) == 0)
-            {
+            if (wcscmp(argv[i + 1], WH_MOD_ID) == 0) {
                 isCurrentToolModProcess = true;
             }
             break;
@@ -5164,46 +6024,40 @@ BOOL Wh_ModInit()
 
     LocalFree(argv);
 
-    if (isExcluded)
-    {
+    if (isExcluded) {
         return FALSE;
     }
 
-    if (isCurrentToolModProcess)
-    {
+    if (isCurrentToolModProcess) {
         g_toolModProcessMutex =
             CreateMutex(nullptr, TRUE, L"windhawk-tool-mod_" WH_MOD_ID);
-        if (!g_toolModProcessMutex)
-        {
+        if (!g_toolModProcessMutex) {
             Wh_Log(L"CreateMutex failed");
             ExitProcess(1);
         }
 
-        if (GetLastError() == ERROR_ALREADY_EXISTS)
-        {
+        if (GetLastError() == ERROR_ALREADY_EXISTS) {
             Wh_Log(L"Tool mod already running (%s)", WH_MOD_ID);
-            CloseHandle(g_toolModProcessMutex);
             ExitProcess(1);
         }
 
-        if (!WhTool_ModInit())
-        {
+        if (!WhTool_ModInit()) {
             ExitProcess(1);
         }
 
-        IMAGE_DOS_HEADER *dosHeader =
-            (IMAGE_DOS_HEADER *)GetModuleHandle(nullptr);
-        IMAGE_NT_HEADERS *ntHeaders =
-            (IMAGE_NT_HEADERS *)((BYTE *)dosHeader + dosHeader->e_lfanew);
+        IMAGE_DOS_HEADER* dosHeader =
+            (IMAGE_DOS_HEADER*)GetModuleHandle(nullptr);
+        IMAGE_NT_HEADERS* ntHeaders =
+            (IMAGE_NT_HEADERS*)((BYTE*)dosHeader + dosHeader->e_lfanew);
+
         DWORD entryPointRVA = ntHeaders->OptionalHeader.AddressOfEntryPoint;
-        void *entryPoint = (BYTE *)dosHeader + entryPointRVA;
+        void* entryPoint = (BYTE*)dosHeader + entryPointRVA;
 
-        Wh_SetFunctionHook(entryPoint, (void *)EntryPoint_Hook, nullptr);
+        Wh_SetFunctionHook(entryPoint, (void*)EntryPoint_Hook, nullptr);
         return TRUE;
     }
 
-    if (isToolModProcess)
-    {
+    if (isToolModProcess) {
         return FALSE;
     }
 
@@ -5211,86 +6065,83 @@ BOOL Wh_ModInit()
     return TRUE;
 }
 
-void Wh_ModAfterInit()
-{
-    if (!g_isToolModProcessLauncher)
-    {
+void Wh_ModAfterInit() {
+    if (!g_isToolModProcessLauncher) {
         return;
     }
 
     WCHAR currentProcessPath[MAX_PATH];
-    DWORD length = GetModuleFileName(nullptr, currentProcessPath,
-                                     ARRAYSIZE(currentProcessPath));
-    if (length == 0 || length == ARRAYSIZE(currentProcessPath))
-    {
-        Wh_Log(L"GetModuleFileName failed");
-        return;
+    switch (GetModuleFileName(nullptr, currentProcessPath,
+                              ARRAYSIZE(currentProcessPath))) {
+        case 0:
+        case ARRAYSIZE(currentProcessPath):
+            Wh_Log(L"GetModuleFileName failed");
+            return;
     }
 
-    WCHAR commandLine[MAX_PATH * 2];
+    WCHAR
+    commandLine[MAX_PATH + 2 +
+                (sizeof(L" -tool-mod \"" WH_MOD_ID "\"") / sizeof(WCHAR)) - 1];
     swprintf_s(commandLine, L"\"%s\" -tool-mod \"%s\"", currentProcessPath,
                WH_MOD_ID);
 
     HMODULE kernelModule = GetModuleHandle(L"kernelbase.dll");
-    if (!kernelModule)
-    {
+    if (!kernelModule) {
         kernelModule = GetModuleHandle(L"kernel32.dll");
-    }
-    if (!kernelModule)
-    {
-        Wh_Log(L"GetModuleHandle failed");
-        return;
+        if (!kernelModule) {
+            Wh_Log(L"No kernelbase.dll/kernel32.dll");
+            return;
+        }
     }
 
-    using CreateProcessInternalW_t = BOOL(WINAPI *)(
+    using CreateProcessInternalW_t = BOOL(WINAPI*)(
         HANDLE hUserToken, LPCWSTR lpApplicationName, LPWSTR lpCommandLine,
         LPSECURITY_ATTRIBUTES lpProcessAttributes,
-        LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles,
+        LPSECURITY_ATTRIBUTES lpThreadAttributes, WINBOOL bInheritHandles,
         DWORD dwCreationFlags, LPVOID lpEnvironment, LPCWSTR lpCurrentDirectory,
         LPSTARTUPINFOW lpStartupInfo,
-        LPPROCESS_INFORMATION lpProcessInformation, PHANDLE hNewToken);
+        LPPROCESS_INFORMATION lpProcessInformation,
+        PHANDLE hRestrictedUserToken);
     CreateProcessInternalW_t pCreateProcessInternalW =
         (CreateProcessInternalW_t)GetProcAddress(kernelModule,
                                                  "CreateProcessInternalW");
-    if (!pCreateProcessInternalW)
-    {
-        Wh_Log(L"GetProcAddress failed");
+    if (!pCreateProcessInternalW) {
+        Wh_Log(L"No CreateProcessInternalW");
         return;
     }
 
-    STARTUPINFO si = {sizeof(si)};
-    si.dwFlags = STARTF_FORCEOFFFEEDBACK;
-    PROCESS_INFORMATION pi = {0};
-    if (pCreateProcessInternalW(nullptr, currentProcessPath, commandLine,
-                                nullptr, nullptr, FALSE, NORMAL_PRIORITY_CLASS,
-                                nullptr, nullptr, &si, &pi, nullptr))
-    {
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
+    STARTUPINFO si{
+        .cb = sizeof(STARTUPINFO),
+        .dwFlags = STARTF_FORCEOFFFEEDBACK,
+    };
+    PROCESS_INFORMATION pi;
+    if (!pCreateProcessInternalW(nullptr, currentProcessPath, commandLine,
+                                 nullptr, nullptr, FALSE, NORMAL_PRIORITY_CLASS,
+                                 nullptr, nullptr, &si, &pi, nullptr)) {
+        Wh_Log(L"CreateProcess failed");
+        return;
     }
-    else
-    {
-        Wh_Log(L"CreateProcessInternalW failed");
-    }
+
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
 }
 
-void Wh_ModSettingsChanged()
-{
-    if (g_isToolModProcessLauncher)
-    {
+void Wh_ModSettingsChanged() {
+    if (g_isToolModProcessLauncher) {
         return;
     }
 
     WhTool_ModSettingsChanged();
 }
 
-void Wh_ModUninit()
-{
-    if (g_isToolModProcessLauncher)
-    {
+void Wh_ModUninit() {
+    if (g_isToolModProcessLauncher) {
         return;
     }
 
     WhTool_ModUninit();
     ExitProcess(0);
 }
+
+
+
